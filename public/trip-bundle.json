@@ -26,7 +26,7 @@
     "first_day": "2026-09-27",
     "last_day": "2026-10-05",
     "shape": "multi-base",
-    "region": "Colorado Front Range — Big Thompson Canyon and Nederland",
+    "region": "Colorado Front Range \u2014 Big Thompson Canyon and Nederland",
     "subjects": [
       "raptors",
       "owls",
@@ -343,9 +343,37 @@
       "run": null,
       "from": null,
       "to": null,
-      "light": null,
-      "light_computed_for": "Nederland, CO",
-      "note": "Light fields for this day were not in the recovered export."
+      "light": {
+        "sunrise": "06:58",
+        "sunset": "18:42",
+        "golden_am": [
+          "06:43",
+          "07:35"
+        ],
+        "golden_pm": [
+          "18:05",
+          "18:57"
+        ],
+        "civil_dawn": "06:33",
+        "civil_dusk": "19:08",
+        "thermals": [
+          "09:53",
+          "15:48"
+        ],
+        "moon": {
+          "phase": "Waning crescent",
+          "illumination_pct": 43.2,
+          "moonrise": null,
+          "moonset": "14:57",
+          "astronomical_dusk": "20:10",
+          "dark_window": [
+            "20:10",
+            "00:04"
+          ],
+          "verdict": "3.9 h of real darkness between 20:10 and moonrise at 00:04 (after midnight)."
+        }
+      },
+      "light_computed_for": "Nederland, CO"
     },
     {
       "date": "2026-10-04",
@@ -355,12 +383,36 @@
       "from": null,
       "to": null,
       "light": {
+        "sunrise": "06:59",
+        "sunset": "18:40",
+        "golden_am": [
+          "06:44",
+          "07:36"
+        ],
+        "golden_pm": [
+          "18:04",
+          "18:56"
+        ],
+        "civil_dawn": "06:34",
+        "civil_dusk": "19:06",
+        "thermals": [
+          "09:54",
+          "15:45"
+        ],
         "moon": {
-          "verdict": "5.2 h of real darkness"
+          "phase": "Waning crescent",
+          "illumination_pct": 32.2,
+          "moonrise": "00:04",
+          "moonset": "15:40",
+          "astronomical_dusk": "20:09",
+          "dark_window": [
+            "20:09",
+            "01:19"
+          ],
+          "verdict": "5.2 h of real darkness between 20:09 and moonrise at 01:19 (after midnight)."
         }
       },
-      "light_computed_for": "Nederland, CO",
-      "note": "Darkest night in the engine inventory. Sunrise/sunset not in the recovered export."
+      "light_computed_for": "Nederland, CO"
     },
     {
       "date": "2026-10-05",
@@ -369,313 +421,1230 @@
       "run": null,
       "from": null,
       "to": null,
-      "light": null,
-      "light_computed_for": "Nederland, CO",
-      "note": "Light fields for this day were not in the recovered export."
+      "light": {
+        "sunrise": "07:00",
+        "sunset": "18:39",
+        "golden_am": [
+          "06:45",
+          "07:37"
+        ],
+        "golden_pm": [
+          "18:02",
+          "18:54"
+        ],
+        "civil_dawn": "06:35",
+        "civil_dusk": "19:04",
+        "thermals": [
+          "09:56",
+          "15:43"
+        ],
+        "moon": {
+          "phase": "Waning crescent",
+          "illumination_pct": 22.2,
+          "moonrise": "01:19",
+          "moonset": "16:15",
+          "astronomical_dusk": "20:07",
+          "dark_window": [
+            "20:07",
+            "02:33"
+          ],
+          "verdict": "6.4 h of real darkness between 20:07 and moonrise at 02:33 (after midnight)."
+        }
+      },
+      "light_computed_for": "Nederland, CO"
     }
   ],
-  "hikes": [
-    {
-      "id": "hike-1",
-      "name": "Lake Isabelle",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-2",
-      "name": "Blue Lake",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-3",
-      "name": "Mitchell",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-4",
-      "name": "Long Lake",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-5",
-      "name": "The Loch",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-6",
-      "name": "Lake Helene",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-7",
-      "name": "Sky Pond",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-8",
-      "name": "Chasm",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-9",
-      "name": "Ouzel",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-10",
-      "name": "Bluebird",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-11",
-      "name": "Lost Lake Hessie",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-12",
-      "name": "Jean Lunning loop",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-13",
-      "name": "Diamond Lake",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-14",
-      "name": "Lake Dorothy/Arapaho Pass",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    },
-    {
-      "id": "hike-15",
-      "name": "Columbine Lake",
-      "miles_alltrails": null,
-      "miles_agency": null,
-      "elevation_display": null,
-      "dogs": null,
-      "permit": null,
-      "subjects": null,
-      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
-    }
-  ],
-  "food": {
-    "engine_count": 19,
-    "areas": [
-      "estes_park",
-      "nederland",
-      "lubbock",
-      "amarillo"
+  "hikes": {
+    "_comment": [
+      "Hike stats from Grok research 2026-08-19 (reference/grok-handoff-hikes.md).",
+      "",
+      "UNITS TRAP: AllTrails quotes ROUND TRIP; NPS/FS trail tables quote ONE WAY.",
+      "Karl's stated preference is 1.5-4.0 mi EACH WAY. Every entry therefore",
+      "carries both raw figures AND a computed each_way_mi so nothing is compared",
+      "across different units.",
+      "",
+      "Where sources DISAGREE, both are kept and both are cited. None is averaged",
+      "into a single confident number -- the disagreement is information about how",
+      "well the distance is actually known.",
+      "",
+      "Claude's own OSM foot-routing figure is stored alongside as a third",
+      "independent measure. For Lake Isabelle: OSM 2.4, FS 2.0, AllTrails 3.3 mi",
+      "each way. Agreement across three methods is why any of them can be printed.",
+      "",
+      "Dogs and permits are LABELS. An RMNP lake stays on the list with its ban",
+      "shown; it is never hidden.",
+      "2026-08-28: the AllTrails CONNECTOR went live in Claude Code, so figures below tagged source 'alltrails-connector' came from the API directly rather than from Grok reading pages. That also unlocked review summaries and ratings, which the page-reading pass could not get (JavaScript-rendered)."
     ],
-    "items": [],
-    "note": "Engine inventory: 19 places, GF and DF as separate fields (official / directory / chain). Names, tags, and addresses are not in this recovered file. Empty list ≠ nothing here. Do not hide a place for a missing tag; do not upgrade unknown to safe. Preference not celiac; cross-contamination OK."
+    "fetched": "2026-08-19",
+    "via": "reference/grok-handoff-hikes.md",
+    "units_note": "AllTrails = round trip. NPS/FS = one way. each_way_mi is derived.",
+    "hikes": [
+      {
+        "name": "Lake Isabelle",
+        "area": "Indian Peaks / Brainard",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Long Lake Trailhead",
+        "alltrails": {
+          "name": "Lake Isabelle via Pawnee Pass Trail",
+          "round_trip_mi": 6.6,
+          "gain_ft": 675,
+          "difficulty": "moderate",
+          "url": "https://www.alltrails.com/trail/us/colorado/lake-isabelle-via-pawnee-pass-trail--2",
+          "route_type": "Loop",
+          "rating": 4.9,
+          "duration_min": 155,
+          "source": "alltrails-connector"
+        },
+        "agency": {
+          "one_way_mi": 2.0,
+          "note": "FS: ~2 mi one way Long Lake to Isabelle; first quarter mile of Pawnee Pass Trail reaches Long Lake.",
+          "url": "https://www.fs.usda.gov/r02/arp/recreation/trails/isabelle-glacier-trail"
+        },
+        "osm_routed_each_way_mi": 2.4,
+        "each_way_mi": 3.3,
+        "disagreement": "AllTrails 6.6 mi RT vs FS ~4 mi RT. Claude's OSM routing lands between them at 4.8 mi RT.",
+        "dogs": "leashed",
+        "permit": null,
+        "access_risk": "Brainard timed-entry tickets end Oct 1 2026; Karl is there Oct 2-5. If the gate is shut, park at Gateway \u2014 AllTrails says that adds 5 mi round trip, and its winter Isabelle listing is 10.6 mi RT vs 6.6 summer (+4.0 mi RT, +332 ft). Either way it stops being a moderate half-day.",
+        "correction": "Grok's page pass recorded this as out-and-back; the connector says LOOP. Same distance, different shape.",
+        "behind_brainard_gate": true
+      },
+      {
+        "name": "Blue Lake",
+        "area": "Indian Peaks / Brainard",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Mitchell Lake Trailhead",
+        "alltrails": {
+          "name": "Blue Lake via Mitchell Lake Trail",
+          "round_trip_mi": 5.7,
+          "gain_ft": 977,
+          "difficulty": "moderate",
+          "url": "https://www.alltrails.com/trail/us/colorado/blue-lake-via-mitchell-lake-trail",
+          "rating": 4.9,
+          "duration_min": 159,
+          "source": "alltrails-connector"
+        },
+        "agency": {
+          "one_way_mi": 2.0,
+          "note": "FS: ~0.5 mi to Mitchell, another 1.5 mi to Blue. 'When under snow cover, it is very easy to lose the trail.'",
+          "url": "https://www.fs.usda.gov/r02/arp/recreation/trails/mitchell-lake-trail"
+        },
+        "each_way_mi": 2.85,
+        "disagreement": "AllTrails 5.7 mi RT vs FS ~4.0 mi RT.",
+        "dogs": "leashed",
+        "permit": null,
+        "access_risk": "Same Brainard gate question as Lake Isabelle.",
+        "behind_brainard_gate": true
+      },
+      {
+        "name": "Mitchell Lake",
+        "area": "Indian Peaks / Brainard",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Mitchell Lake Trailhead",
+        "alltrails": {
+          "name": "Mitchell Lake Trail",
+          "round_trip_mi": 1.8,
+          "gain_ft": 219,
+          "difficulty": "easy",
+          "url": "https://www.alltrails.com/trail/us/colorado/mitchell-lake-trail"
+        },
+        "agency": {
+          "one_way_mi": 0.5,
+          "note": "FS: ~0.5 mi to Mitchell.",
+          "url": "https://www.fs.usda.gov/r02/arp/recreation/trails/mitchell-lake-trail"
+        },
+        "each_way_mi": 0.9,
+        "disagreement": null,
+        "dogs": "leashed",
+        "permit": null,
+        "access_risk": "Same Brainard gate question.",
+        "note": "Shorter than the 1.5-4.0 mi each way Karl asked for \u2014 listed as the easy option, not the target.",
+        "behind_brainard_gate": true
+      },
+      {
+        "name": "Long Lake",
+        "area": "Indian Peaks / Brainard",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Long Lake Trailhead",
+        "alltrails": {
+          "name": "Long Lake Trail",
+          "round_trip_mi": 1.8,
+          "gain_ft": 85,
+          "difficulty": "easy",
+          "url": "https://www.alltrails.com/trail/us/colorado/long-lake-trail"
+        },
+        "agency": {
+          "one_way_mi": 0.25,
+          "note": "FS: first quarter mile of Pawnee Pass Trail reaches the lake. Lot holds 30 cars and has its own ticket in season.",
+          "url": "https://www.fs.usda.gov/r02/arp/recreation/long-lake-trailhead"
+        },
+        "each_way_mi": 0.9,
+        "disagreement": "Not the same measurement: AllTrails 1.8 mi is the LAKE CIRCUIT, FS 0.25 mi is trailhead-to-lake. Both printed.",
+        "dogs": "leashed",
+        "permit": null,
+        "access_risk": "Same Brainard gate question.",
+        "behind_brainard_gate": true
+      },
+      {
+        "name": "The Loch",
+        "area": "RMNP / Glacier Gorge",
+        "serves": [
+          "drake"
+        ],
+        "trailhead": "Glacier Gorge Trailhead",
+        "alltrails": {
+          "name": "The Loch via Glacier Gorge Trail",
+          "round_trip_mi": 5.8,
+          "gain_ft": 1062,
+          "difficulty": "moderate",
+          "url": "https://www.alltrails.com/trail/us/colorado/the-loch-lake-trail-via-glacier-gorge-trail"
+        },
+        "agency": {
+          "one_way_mi": 3.0,
+          "gain_ft": 1046,
+          "note": "NPS corridor page; the 2017 trail list says 990 ft.",
+          "url": "https://www.nps.gov/romo/planyourvisit/exploring-the-bear-lake-road-corridor.htm"
+        },
+        "each_way_mi": 2.9,
+        "disagreement": "AllTrails 5.8 mi RT vs NPS 6.0 mi RT \u2014 close.",
+        "dogs": "prohibited",
+        "permit": "Timed entry AND Bear Lake Road corridor permit, 05:00-18:00 through Oct 18.",
+        "access_risk": "NPS says the Glacier Gorge lot fills early; Park & Ride plus the Bear Lake shuttle is the alternative.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Lake Helene",
+        "area": "RMNP / Bear Lake",
+        "serves": [
+          "drake"
+        ],
+        "trailhead": "Bear Lake",
+        "alltrails": {
+          "name": "Lake Helene via Bear Lake, Flattop Mountain, and Fern Lake Trail",
+          "round_trip_mi": 6.2,
+          "gain_ft": 1345,
+          "difficulty": "moderate",
+          "url": "https://www.alltrails.com/trail/us/colorado/lake-helene-via-fern-lake-trail"
+        },
+        "agency": {
+          "one_way_mi": 2.9,
+          "gain_ft": 1340,
+          "note": "NPS corridor 2025; the 2017 list says 1,215 ft. Two Rivers Lake sits on the Helene spur and has no separate NPS line.",
+          "url": "https://www.nps.gov/romo/planyourvisit/exploring-the-bear-lake-road-corridor.htm"
+        },
+        "each_way_mi": 3.1,
+        "disagreement": "AllTrails 6.2 mi RT vs NPS 5.8 mi RT.",
+        "dogs": "prohibited",
+        "permit": "Timed entry AND Bear Lake Road corridor permit, 05:00-18:00 through Oct 18.",
+        "access_risk": "NPS says the Bear Lake lot is often full by 09:00.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Sky Pond",
+        "area": "RMNP / Glacier Gorge",
+        "serves": [
+          "drake"
+        ],
+        "trailhead": "Glacier Gorge Trailhead",
+        "alltrails": {
+          "name": "Sky Pond via Glacier Gorge Trail",
+          "round_trip_mi": 9.0,
+          "gain_ft": 1765,
+          "difficulty": "hard",
+          "url": "https://www.alltrails.com/trail/us/colorado/sky-pond-via-glacier-gorge-trail"
+        },
+        "agency": {
+          "one_way_mi": 4.2,
+          "gain_ft": 1726,
+          "note": "NPS corridor 2025 says 4.2 mi; the 2017 trail list says 4.9 mi. The two NPS pages disagree with each other.",
+          "url": "https://www.nps.gov/romo/planyourvisit/list_hiking_trails.htm"
+        },
+        "each_way_mi": 4.5,
+        "disagreement": "AllTrails 9.0 mi RT vs NPS 8.4 OR 9.8 mi RT \u2014 NPS contradicts itself.",
+        "dogs": "prohibited",
+        "permit": "Timed entry AND Bear Lake Road corridor permit.",
+        "access_risk": "Route passes The Loch and includes the Timberline Falls scramble. Glacier Gorge lot fills early.",
+        "note": "Beyond the 1.5-4.0 mi each way Karl asked for, and rated hard.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Chasm Lake",
+        "area": "RMNP / Longs Peak",
+        "serves": [
+          "drake"
+        ],
+        "trailhead": "Longs Peak Ranger Station",
+        "alltrails": {
+          "name": "Chasm Lake",
+          "round_trip_mi": 8.4,
+          "gain_ft": 2542,
+          "difficulty": "hard \u2014 67% of reviewers say hard",
+          "url": "https://www.alltrails.com/trail/us/colorado/chasm-lake"
+        },
+        "agency": {
+          "one_way_mi": 4.2,
+          "gain_ft": 2360,
+          "url": "https://www.nps.gov/romo/planyourvisit/list_hiking_trails.htm"
+        },
+        "each_way_mi": 4.2,
+        "disagreement": "Miles agree exactly (8.4 RT); gain differs \u2014 AllTrails 2,542 ft vs NPS 2,360 ft.",
+        "dogs": "prohibited",
+        "permit": "Not on Bear Lake Road; rest-of-park timed entry 09:00-14:00 through Oct 12.",
+        "access_risk": "AllTrails: trailhead very popular and full early in the morning.",
+        "note": "Beyond Karl's stated range and rated hard. Sits under Mills Glacier.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Ouzel Lake",
+        "area": "RMNP / Wild Basin",
+        "serves": [
+          "drake"
+        ],
+        "trailhead": "Wild Basin Trailhead",
+        "alltrails": {
+          "name": "Ouzel Lake Trail",
+          "round_trip_mi": 10.1,
+          "gain_ft": 1719,
+          "difficulty": "hard",
+          "url": "https://www.alltrails.com/trail/us/colorado/ouzel-lake-trail"
+        },
+        "agency": {
+          "one_way_mi": 4.9,
+          "gain_ft": 1510,
+          "url": "https://www.nps.gov/romo/planyourvisit/list_hiking_trails.htm"
+        },
+        "each_way_mi": 5.05,
+        "disagreement": "AllTrails 10.1 vs NPS 9.8 mi RT.",
+        "dogs": "prohibited",
+        "permit": "Rest-of-park timed entry 09:00-14:00 through Oct 12. Wild Basin is NOT Bear Lake Road.",
+        "note": "Well beyond Karl's stated range.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Bluebird Lake",
+        "area": "RMNP / Wild Basin",
+        "serves": [
+          "drake"
+        ],
+        "trailhead": "Wild Basin Trailhead",
+        "alltrails": {
+          "name": "Bluebird Lake Trail",
+          "round_trip_mi": 13.6,
+          "gain_ft": 2785,
+          "difficulty": "hard",
+          "url": "https://www.alltrails.com/trail/us/colorado/bluebird-lake-trail"
+        },
+        "agency": {
+          "one_way_mi": 6.0,
+          "gain_ft": 2478,
+          "url": "https://www.nps.gov/romo/planyourvisit/list_hiking_trails.htm"
+        },
+        "each_way_mi": 6.8,
+        "disagreement": "AllTrails 13.6 vs NPS 12.0 mi RT \u2014 the largest gap of any hike here.",
+        "dogs": "prohibited",
+        "permit": "Rest-of-park timed entry 09:00-14:00 through Oct 12.",
+        "note": "Far beyond Karl's stated range.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Lost Lake (Hessie)",
+        "area": "Roosevelt NF / Eldora",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Hessie Trailhead, County Road 130",
+        "alltrails": {
+          "name": "Lost Lake via Hessie Trail",
+          "round_trip_mi": 4.2,
+          "gain_ft": 833,
+          "difficulty": "moderate",
+          "rating": 4.8,
+          "reviews": 15632,
+          "duration_min": 125,
+          "route_type": "Out & back",
+          "max_elevation_ft": 9812,
+          "source": "alltrails-connector",
+          "url": "https://www.alltrails.com/trail/us/colorado/lost-lake-via-hessie-trail"
+        },
+        "agency": {
+          "one_way_mi": 2.1,
+          "note": "Roosevelt NF. No day-use permit. Overnight camping at Lost Lake must use designated sites.",
+          "url": "https://www.fs.usda.gov/recarea/arp/recarea?recid=28294"
+        },
+        "each_way_mi": 2.1,
+        "dogs": "leashed",
+        "permit": null,
+        "review_summary": "Beautiful views, a lovely lake, diverse terrain. Challenges: rocky paths and LIMITED PARKING. Arriving early and using the shuttle are recommended.",
+        "wildlife": "Moose and brook trout are both commonly seen along this trail (AllTrails curated description).",
+        "access_risk": "NOT behind the Brainard gate \u2014 this is the one strong lake hike that sidesteps the Oct 1 ticket-season problem entirely. Real risk is parking: the lot is small. A free Boulder County shuttle runs in busy months; whether dogs are allowed on it is NOT established (the Brainard shuttle bans pets).",
+        "note": "Closest trailhead to the Nederland cabin of anything found \u2014 4.45 mi. Highest point 9,812 ft, about 1,100 ft lower than Lake Isabelle, which suits the first days after arriving from 530 ft.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Lake Isabelle + Long Lake (Jean Lunning Loop)",
+        "area": "Indian Peaks / Brainard",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Long Lake Trailhead",
+        "alltrails": {
+          "name": "Lake Isabelle and Long Lake, Jean Lunning Loop",
+          "round_trip_mi": 4.9,
+          "gain_ft": 475,
+          "difficulty": "moderate",
+          "rating": 4.9,
+          "duration_min": 113,
+          "route_type": "Loop",
+          "source": "alltrails-connector",
+          "url": "https://www.alltrails.com/trail/us/colorado/lake-isabelle-and-long-lake-jean-lunning-loop"
+        },
+        "agency": {},
+        "each_way_mi": 2.45,
+        "dogs": "leashed",
+        "permit": null,
+        "access_risk": "Behind the Brainard gate \u2014 same Oct 1 ticket question as Lake Isabelle.",
+        "note": "Reaches Isabelle with 200 ft LESS climbing and 1.7 fewer miles than the standard route, and is tagged kid-friendly. Better fit for the stated range than the 6.6 mi version.",
+        "behind_brainard_gate": true
+      },
+      {
+        "name": "Diamond Lake",
+        "area": "Indian Peaks / Fourth of July",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Fourth of July Trailhead",
+        "alltrails": {
+          "name": "Diamond Lake Trail",
+          "round_trip_mi": 5.5,
+          "gain_ft": 1217,
+          "difficulty": "moderate",
+          "rating": 4.8,
+          "duration_min": 170,
+          "route_type": "Out & back",
+          "source": "alltrails-connector",
+          "url": "https://www.alltrails.com/trail/us/colorado/diamond-lake-trail"
+        },
+        "agency": {},
+        "each_way_mi": 2.75,
+        "dogs": "leashed",
+        "permit": null,
+        "access_risk": "Indian Peaks but NOT via Brainard \u2014 different approach, so the Oct 1 gate question does not apply.",
+        "note": "Waterfall as well as the lake.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Lake Dorothy / Arapaho Pass",
+        "area": "Indian Peaks / Fourth of July",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Fourth of July Trailhead",
+        "alltrails": {
+          "name": "Arapaho Pass and Lake Dorothy Trail",
+          "round_trip_mi": 7.1,
+          "gain_ft": 1945,
+          "difficulty": "moderate",
+          "rating": 4.9,
+          "duration_min": 244,
+          "route_type": "Out & back",
+          "source": "alltrails-connector",
+          "url": "https://www.alltrails.com/trail/us/colorado/arapahoe-pass-and-lake-dorothy-trail"
+        },
+        "agency": {},
+        "each_way_mi": 3.55,
+        "dogs": "leashed",
+        "permit": null,
+        "access_risk": "Not via Brainard.",
+        "note": "Sits below Arapaho Glacier. Highest gain of the dog-friendly set at 1,945 ft \u2014 inside the mileage range but a real climb at altitude.",
+        "behind_brainard_gate": false
+      },
+      {
+        "name": "Columbine Lake",
+        "area": "Arapaho NF / Caribou Pass",
+        "serves": [
+          "nederland"
+        ],
+        "trailhead": "Caribou Pass",
+        "alltrails": {
+          "name": "Columbine Lake via Caribou Pass",
+          "round_trip_mi": 6.8,
+          "gain_ft": 1082,
+          "difficulty": "moderate",
+          "rating": 4.8,
+          "duration_min": 184,
+          "route_type": "Out & back",
+          "source": "alltrails-connector",
+          "url": "https://www.alltrails.com/trail/us/colorado/columbine-lake-trail--2"
+        },
+        "agency": {},
+        "each_way_mi": 3.4,
+        "dogs": "leashed",
+        "permit": null,
+        "access_risk": "Not via Brainard, but the trailhead is 13 mi from the cabin.",
+        "note": null,
+        "behind_brainard_gate": false
+      }
+    ],
+    "gateway_fallback": {
+      "when": "If the Brainard Lake gate is closed \u2014 tickets end Oct 1 2026 and Karl is there Oct 2-5.",
+      "park_at": "Brainard Gateway Trailhead (year-round, no timed entry)",
+      "adds": "AllTrails Brainard park page: 'this will add 5 miles round-trip to the hike'. Its winter Lake Isabelle listing is 10.6 mi RT / 1,007 ft against 6.6 / 675 in summer \u2014 so +4.0 mi RT and +332 ft.",
+      "sources": [
+        "https://www.alltrails.com/parks/us/colorado/brainard-lake-recreation-area",
+        "https://www.alltrails.com/trail/us/colorado/lake-isabelle-trail-winter",
+        "https://www.fs.usda.gov/r02/arp/recreation/brainard-lake-gateway-trailhead"
+      ],
+      "consequence": "Lake Isabelle becomes about 5.3 mi each way \u2014 past the 1.5-4.0 mi Karl asked for. Print it as an option with the cost, not as a plan."
+    },
+    "connector_verified": "2026-08-28"
   },
-  "photo_ops": {
-    "items": [],
-    "note": "Photo-op / hotspot records were not in the recovered export. Hiking nav is AllTrails, not this app."
-  },
-  "foliage": {
-    "as_of": "2026-08-28",
-    "kind_now": "FORECAST",
-    "FORECAST": {
-      "as_of": "2026-08-28",
-      "text": "As of 2026-08-28 this is a forecast, not a measured peak. Trip is on the back side of Estes / Peak to Peak."
+  "food": {
+    "_comment": [
+      "Places with gluten-free and/or dairy-free OPTIONS. Preference, not celiac --",
+      "there is deliberately no allergy-safety or cross-contamination language",
+      "anywhere in this file, and none may be added to a sheet.",
+      "",
+      "GF and DF are SEPARATE fields. Vegan is not gluten-free. 'Gluten-friendly'",
+      "and 'gluten-sensitive' are recorded as the source worded them and are never",
+      "upgraded to 'gluten-free'. Unknown stays unknown.",
+      "",
+      "confidence: 'official' = the business's own site or menu says it.",
+      "            'directory' = a crowd-sourced listing (Find Me Gluten Free).",
+      "            'chain' = a chain-level product claim, not this location.",
+      "Every entry gets 'call to confirm' printed on the sheet regardless of tier.",
+      "",
+      "Researched by Grok 2026-08-19, see reference/grok-handoff.md. Claude did not",
+      "verify each URL independently -- the tier is the honesty mechanism."
+    ],
+    "fetched": "2026-08-19",
+    "always_print": "Call to confirm \u2014 menus and hours change.",
+    "areas": {
+      "estes_park": {
+        "serves": [
+          "drake"
+        ],
+        "note": "Drake's real food radius. About 30 minutes up the canyon."
+      },
+      "nederland": {
+        "serves": [
+          "nederland"
+        ],
+        "note": "Walkable town centre."
+      },
+      "lubbock": {
+        "serves": [
+          "route"
+        ],
+        "note": "Driving-day option, not a booked stop."
+      },
+      "amarillo": {
+        "serves": [
+          "route"
+        ],
+        "note": "Driving-day option, not a booked stop."
+      }
     },
-    "OBSERVATION": {
-      "as_of": null,
-      "text": null,
-      "note": "No observation in this recovered file. Model disagrees with county forecast — print both when present. Unknown stays unknown; a failed live fetch is not “no color”."
-    },
-    "disagreement": "Model disagrees with county forecast. Print both. Do not average."
-  },
-  "gate": {
-    "id": "brainard",
-    "name": "Brainard",
-    "last_seen": "OPEN",
-    "last_seen_table": "2026-08-10",
-    "checked": "2026-08-28",
-    "timed_entry_ends": "2026-10-01",
-    "note": "Karl there Oct 2–5 after timed-entry ends Oct 1. last_seen OPEN is from the table dated 2026-08-10, checked 2026-08-28. A failed live fetch is not “closed”.",
-    "url": null
-  },
-  "webcams": {
-    "items": [],
-    "note": "Webcam URLs were in the engine export and are not in this recovered file. Live fetches are display-only; stamp fetched-at; fail visibly."
-  },
-  "gaps": [
-    {
-      "id": "overnight-sep27",
-      "name": "Sep 27 overnight not booked",
-      "note": "Open. Options with costs, never a chosen stop."
-    },
-    {
-      "id": "return-after-oct5",
-      "name": "Return after Oct 5 not booked",
-      "note": "No invented itinerary."
-    },
-    {
-      "id": "drake-pin",
-      "name": "Drake pin unconfirmed",
-      "note": "elevation_display is a range."
-    },
-    {
-      "id": "weather",
-      "name": "No weather yet",
-      "note": null
-    },
-    {
-      "id": "birds",
-      "name": "Bird silence is silence",
-      "note": "No eBird path. App must not call eBird."
-    },
-    {
-      "id": "rmnp-timed-entry",
-      "name": "RMNP timed-entry not booked",
-      "note": null
-    },
-    {
-      "id": "light-oct3-5",
-      "name": "Oct 3 and Oct 5 light not in recovered export",
-      "note": "Oct 4 darkness 5.2 h is from inventory; other light fields unknown."
-    },
-    {
-      "id": "food-names",
-      "name": "19 food places named in the engine; names not in this recovered file",
-      "note": "Areas: estes_park, nederland, lubbock, amarillo."
-    },
-    {
-      "id": "hike-figures",
-      "name": "Hike AllTrails and agency figures not in this recovered file",
-      "note": "Print both when present. Never average."
-    },
-    {
-      "id": "webcam-urls",
-      "name": "Webcam URLs not in this recovered file",
-      "note": null
+    "places": [
+      {
+        "name": "The Country Market of Estes Park",
+        "area": "estes_park",
+        "kind": "grocery",
+        "address": "900 Moraine Ave, Estes Park, CO 80517",
+        "gluten_free": {
+          "status": "stocked",
+          "quote": "organic, and gluten-free foods",
+          "confidence": "official",
+          "source": "https://www.thecountrymarketofestespark.com/"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Safeway",
+        "area": "estes_park",
+        "kind": "grocery",
+        "address": "451 E Wonderview Ave, Estes Park, CO 80517",
+        "gluten_free": {
+          "status": "packaged goods only",
+          "quote": "Location page does not mention GF. Chain Open Nature includes certified gluten-free products.",
+          "confidence": "chain",
+          "source": "https://local.safeway.com/safeway/co/estes-park/451-e-wonderview-ave.html"
+        },
+        "dairy_free": {
+          "status": "packaged goods only",
+          "quote": "Chain Open Nature Free From includes dairy-free.",
+          "confidence": "chain",
+          "source": "https://local.safeway.com/safeway/co/estes-park/451-e-wonderview-ave.html"
+        },
+        "note": "Treat as packaged goods, not a confirmed in-store section."
+      },
+      {
+        "name": "The Post Mountain House",
+        "area": "estes_park",
+        "kind": "eat",
+        "address": "333 E Wonderview Ave, Estes Park, CO",
+        "gluten_free": {
+          "status": "menu items tagged",
+          "quote": "many items tagged gluten free, including 'our famous gluten free fried chicken'; GF bun +$2",
+          "confidence": "official",
+          "source": "https://www.thepostcolorado.com/location/estes-park/"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": "No dairy-free tag on the menu.",
+          "confidence": null,
+          "source": null
+        },
+        "note": "Strongest official GF menu found in Estes Park."
+      },
+      {
+        "name": "Kind Coffee",
+        "area": "estes_park",
+        "kind": "eat",
+        "address": "470 E Elkhorn Ave, Estes Park, CO",
+        "gluten_free": {
+          "status": "menu items",
+          "quote": "GF bagel, GF oatmeal, some GF treats",
+          "confidence": "official",
+          "source": "https://www.kindcoffee.com/pages/kind-f-a-q"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Ed's Cantina & Grill",
+        "area": "estes_park",
+        "kind": "eat",
+        "address": "390 E Elkhorn Ave, Estes Park, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "Find Me Gluten Free lists a GF menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/eds-cantina/27005"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Himalayan Curry & Kebob",
+        "area": "estes_park",
+        "kind": "eat",
+        "address": "101 W Elkhorn Ave, Estes Park, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "GF labeled on menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/himalayan-curry-and-kebob/4893128240922624"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Notchtop Bakery & Cafe",
+        "area": "estes_park",
+        "kind": "eat",
+        "address": "459 E Wonderview Ave #4, Estes Park, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "Find Me Gluten Free lists a GF menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/notchtop-bakery-and-cafe/5806297211600896"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "The Wapiti Colorado Pub",
+        "area": "estes_park",
+        "kind": "eat",
+        "address": "1350 Fall River Rd, Estes Park, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "Find Me Gluten Free lists a GF menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/the-wapiti-colorado-pub/9110644"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Village Bagels",
+        "area": "estes_park",
+        "kind": "eat",
+        "address": "543 Big Thompson Ave #101, Estes Park, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "Find Me Gluten Free lists a GF menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/village-bagels/4556789551333376"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Rocky Mountain Crepe Company",
+        "area": "estes_park",
+        "kind": "eat",
+        "address": "184 E Elkhorn Ave Unit J, Estes Park, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "Find Me Gluten Free lists a GF menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/rocky-mountain-crepe-company/6100986888585216"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "B & F Mountain Market",
+        "area": "nederland",
+        "kind": "grocery",
+        "address": "60 Lakeview Dr, Nederland, CO 80466",
+        "gluten_free": {
+          "status": "unknown",
+          "quote": "No GF claim found on a store site.",
+          "confidence": null,
+          "source": "https://www.yelp.com/biz/b-and-f-mountain-market-nederland"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        },
+        "note": "A real grocery \u2014 the practical answer for a cabin with a kitchen. Dietary claims unknown."
+      },
+      {
+        "name": "Crosscut Pizzeria & Taphouse",
+        "area": "nederland",
+        "kind": "eat",
+        "address": "4 E 1st St, Nederland, CO",
+        "gluten_free": {
+          "status": "GF crust",
+          "quote": "gluten-free crust available",
+          "confidence": "official",
+          "source": "https://www.crosscutpizza.com/menu"
+        },
+        "dairy_free": {
+          "status": "items tagged df",
+          "quote": "tomato sauce (gf/df); spicy marinara (gf/df); marinara pizza listed with no cheese",
+          "confidence": "official",
+          "source": "https://www.crosscutpizza.com/menu"
+        },
+        "note": "The ONLY place in this file whose own menu carries an explicit dairy-free tag. Their vegan cheese is vegan, not gluten-free."
+      },
+      {
+        "name": "Busey Brews",
+        "area": "nederland",
+        "kind": "eat",
+        "address": "70 E 1st St, Nederland, CO",
+        "gluten_free": {
+          "status": "gluten-friendly (NOT gluten-free)",
+          "quote": "Gluten-Sensitive, Vegetarian & Vegan Options Available / 'gluten-friendly'",
+          "confidence": "official",
+          "source": "https://buseybrews.com/"
+        },
+        "dairy_free": {
+          "status": "vegan options only \u2014 a dairy-free signal, not a dairy-free claim",
+          "quote": "Vegan options available; the site does not say dairy-free.",
+          "confidence": "official",
+          "source": "https://buseybrews.com/"
+        },
+        "note": "Their own wording is gluten-sensitive/gluten-friendly. Not upgraded."
+      },
+      {
+        "name": "Ubon Thai",
+        "area": "nederland",
+        "kind": "eat",
+        "address": "155 CO-119, Nederland, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "Find Me Gluten Free lists a GF menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/ubon-thai-cuisine/6127891687538688"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Kathmandu",
+        "area": "nederland",
+        "kind": "eat",
+        "address": "110 N Jefferson St, Nederland, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "Find Me Gluten Free lists a GF menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/kathmandu-restaurant/5338761955901440"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "New Moon Bakery & Cafe",
+        "area": "nederland",
+        "kind": "eat",
+        "address": "1 W 1st St, Nederland, CO",
+        "gluten_free": {
+          "status": "GF menu flagged",
+          "quote": "Find Me Gluten Free lists a GF menu",
+          "confidence": "directory",
+          "source": "https://www.findmeglutenfree.com/biz/new-moon-bakery-and-cafe/6581423053996032"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Natural Grocers",
+        "area": "lubbock",
+        "kind": "grocery",
+        "address": "7208 Slide Rd, Lubbock, TX 79424",
+        "gluten_free": {
+          "status": "stocked",
+          "quote": "Chain stocks gluten-free foods",
+          "confidence": "chain",
+          "source": "https://www.naturalgrocers.com/store/lubbock"
+        },
+        "dairy_free": {
+          "status": "vegan foods stocked \u2014 a dairy-free signal",
+          "quote": "Chain stocks vegan foods",
+          "confidence": "chain",
+          "source": "https://www.naturalgrocers.com/store/lubbock"
+        }
+      },
+      {
+        "name": "Sprouts Farmers Market",
+        "area": "lubbock",
+        "kind": "grocery",
+        "address": "8201 Quaker Ave Suite 140, Lubbock, TX",
+        "gluten_free": {
+          "status": "unknown",
+          "quote": "Location page does not mention GF.",
+          "confidence": null,
+          "source": "https://www.sprouts.com/store/tx/lubbock/lubbock/"
+        },
+        "dairy_free": {
+          "status": "unknown",
+          "quote": null,
+          "confidence": null,
+          "source": null
+        }
+      },
+      {
+        "name": "Natural Grocers",
+        "area": "amarillo",
+        "kind": "grocery",
+        "address": "7441 Hillside Rd, Amarillo, TX 79119",
+        "gluten_free": {
+          "status": "stocked",
+          "quote": "Chain stocks gluten-free foods",
+          "confidence": "chain",
+          "source": "https://www.naturalgrocers.com/store/amarillo"
+        },
+        "dairy_free": {
+          "status": "vegan foods stocked \u2014 a dairy-free signal",
+          "quote": "Chain stocks vegan foods",
+          "confidence": "chain",
+          "source": "https://www.naturalgrocers.com/store/amarillo"
+        },
+        "note": "Hillside Rd, not the older 34th Ave listing."
+      }
+    ],
+    "directories": {
+      "estes_park": "https://www.findmeglutenfree.com/us/co/estes-park",
+      "nederland": "https://www.findmeglutenfree.com/us/co/nederland",
+      "lubbock": "https://www.findmeglutenfree.com/us/tx/lubbock",
+      "amarillo": "https://www.findmeglutenfree.com/us/tx/amarillo"
     }
-  ],
-  "open_decisions": [
-    {
-      "id": "sep27-overnight",
-      "name": "Sep 27 overnight",
-      "status": "open",
-      "note": "Options with costs, never a chosen stop.",
-      "options": [],
-      "options_note": "Costed overnight options were not in the recovered export."
-    },
-    {
-      "id": "brainard-lake-split",
-      "name": "Lake hike split by Brainard gate",
-      "status": "open",
-      "note": "Gate last_seen OPEN (table 2026-08-10), checked 2026-08-28. Timed-entry ends Oct 1. Which lake hike depends on the gate; this app does not pick a winner."
-    },
-    {
-      "id": "return-after-oct5",
-      "name": "Return after Oct 5 unbooked",
-      "status": "open",
-      "note": "No invented itinerary."
-    }
-  ],
+  },
   "land_rules": {
-    "drake_pin": "unconfirmed",
-    "bighorn_rut": false,
-    "bighorn_rut_note": "Bighorn are NOT in rut.",
-    "rmnp_timed_entry": "not booked",
-    "brainard_timed_entry_ends": "2026-10-01",
-    "dogs_unknown_meaning": "Dog-rule unknown ≠ banned and ≠ fine.",
-    "note": "Print land rules from the bundle. Unknown stays unknown."
+    "_comment": [
+      "Dog and permit rules, keyed by LAND MANAGER, because that is what actually",
+      "determines them. Every entry carries the source it came from and the date it",
+      "was fetched. Nothing here is recalled at runtime -- a sheet prints the rule",
+      "AND its citation so Karl can check it himself when he is somewhere with no",
+      "signal and a ranger is telling him otherwise.",
+      "Re-fetch before each trip: these change between seasons."
+    ],
+    "fetched": "2026-08-19",
+    "managers": {
+      "National Park Service": {
+        "dogs": "prohibited",
+        "detail": "Pets are prohibited on ALL trails, tundra and meadows. Leashed pets (max 6 ft) are allowed only along established roads, in parking areas, and in established campgrounds and picnic areas. Pets may NOT be left unattended in vehicles.",
+        "source": "https://www.nps.gov/romo/planyourvisit/pets.htm",
+        "fetched": "2026-08-19"
+      },
+      "United States Forest Service": {
+        "dogs": "leashed",
+        "detail": "Leashed dogs are allowed on most Forest Service trails. Some areas have their own rules -- Brainard Lake differs by season -- so check the specific trail.",
+        "source": "https://www.fs.usda.gov/r02/arp",
+        "fetched": "2026-08-19"
+      },
+      "Boulder County Open Space": {
+        "dogs": "leashed",
+        "detail": "Leashed and under physical control on properties where dogs are allowed. Four properties prohibit dogs entirely -- see named_exceptions.",
+        "source": "https://bouldercounty.gov/open-space/parks-and-trails/regulations/",
+        "fetched": "2026-08-19"
+      },
+      "Bureau of Land Management": {
+        "dogs": "unknown",
+        "detail": "Varies by field office and by area. Not established for this trip.",
+        "source": null,
+        "fetched": "2026-08-19"
+      }
+    },
+    "named_exceptions": [
+      {
+        "match": "Caribou Ranch",
+        "dogs": "prohibited",
+        "detail": "Dogs are not permitted at Caribou Ranch Open Space at all. It is immediately next to Nederland, which makes it an easy place to drive to and be turned away from.",
+        "source": "https://bouldercounty.gov/open-space/parks-and-trails/regulations/",
+        "fetched": "2026-08-19"
+      },
+      {
+        "match": "Hall Ranch",
+        "dogs": "prohibited",
+        "detail": "Dogs are not permitted.",
+        "source": "https://bouldercounty.gov/open-space/parks-and-trails/regulations/",
+        "fetched": "2026-08-19"
+      },
+      {
+        "match": "Heil Valley Ranch",
+        "dogs": "prohibited",
+        "detail": "Dogs are not permitted.",
+        "source": "https://bouldercounty.gov/open-space/parks-and-trails/regulations/",
+        "fetched": "2026-08-19"
+      },
+      {
+        "match": "Dodd Lake",
+        "dogs": "prohibited",
+        "detail": "Dogs are not permitted.",
+        "source": "https://bouldercounty.gov/open-space/parks-and-trails/regulations/",
+        "fetched": "2026-08-19"
+      }
+    ],
+    "permits": [
+      {
+        "match": "Rocky Mountain National Park",
+        "name": "RMNP timed entry",
+        "windows": [
+          {
+            "label": "Rest of park (excludes Bear Lake Road)",
+            "from": "2026-05-22",
+            "to": "2026-10-12",
+            "start": "09:00",
+            "end": "14:00"
+          },
+          {
+            "label": "Bear Lake Road corridor",
+            "from": "2026-05-22",
+            "to": "2026-10-18",
+            "start": "05:00",
+            "end": "18:00"
+          }
+        ],
+        "free_windows": "No permit is required outside those hours -- before 09:00 or after 14:00 for the rest of the park, and before 05:00 or after 18:00 for the Bear Lake corridor.",
+        "release": "Reservations open on Recreation.gov at 08:00 MDT one month ahead: Aug 1 for September dates, Sep 1 for Oct 1-18. A further 40% of each day is released at 19:00 MDT the evening before.",
+        "source": "https://www.nps.gov/romo/planyourvisit/timed-entry-permit-system.htm",
+        "fetched": "2026-08-19"
+      }
+    ],
+    "access_areas": [
+      {
+        "match": "Brainard Lake",
+        "name": "Brainard Lake Recreation Area",
+        "why_it_matters": "Gates every Indian Peaks lake near Nederland - Isabelle, Mitchell, Blue, Long. Same class of avoidable failure as the Caribou Ranch dog ban.",
+        "timed_entry": {
+          "required_for": "Driving in and parking inside the recreation area. Sold ONLY on Recreation.gov, never on-site.",
+          "ticket_season_2026": "June 12 - October 1",
+          "trip_dates_status": "Oct 2-5 falls AFTER the published ticket season. The official pages do NOT say driving in is free after Oct 1 - they say the gate runs mid-June to mid-October, closing weather-dependent. Treat access as UNCONFIRMED and check Boulder Ranger District road status the week before.",
+          "long_lake_note": "Long Lake Trailhead is its own separate ticket, 30 cars, park in the lot named on the reservation.",
+          "source": "https://www.recreation.gov/timed-entry/10087515"
+        },
+        "fallback": {
+          "name": "Gateway Trailhead",
+          "detail": "Year-round, NO timed entry, but 2 miles from Brainard Lake. If the gate is shut this is where you park - and it adds about 2 miles EACH WAY to every lake beyond it.",
+          "fees": "Summer day use free; winter (mid-Oct to mid-June) $10 at Gateway.",
+          "source": "https://www.fs.usda.gov/r02/arp/recreation/brainard-lake-gateway-trailhead"
+        },
+        "fees": "$16 personal vehicle / $9 motorcycle / $38 van. Pass holders still buy the reservation; Recreation.gov charges $2 processing.",
+        "shuttle": "Gateway to Brainard Lake TH, $5 round trip, generally Fri-Sun 8-6. NO PETS - useless on a day the dogs come.",
+        "dogs": "Hand-held leash May 1 - Nov 14 in the recreation area and at Long Lake; the Mitchell Lake page words it May 1 - Nov 1. Oct 2-5 sits inside BOTH, so dogs are fine on Isabelle, Mitchell and Blue. Winter roads-only rule does not start until Nov 15.",
+        "sources": [
+          "https://www.fs.usda.gov/r02/arp/recreation/brainard-lake-recreation-area",
+          "https://www.fs.usda.gov/r02/arp/recreation/brainard-lake-recreation-area-seasonal-information",
+          "https://www.fs.usda.gov/r02/arp/recreation/long-lake-trailhead",
+          "https://www.fs.usda.gov/r02/arp/recreation/indian-peaks-wilderness",
+          "https://www.fs.usda.gov/r02/arp/conditions"
+        ],
+        "fetched": "2026-08-19",
+        "via": "Grok research handoff, reference/grok-handoff.md"
+      }
+    ]
   },
   "behaviour": {
-    "no_early_mornings": "sort_key",
-    "no_early_mornings_note": "SORT KEY, not a filter. Early options stay on the list and sort last.",
-    "gf_df": "separate",
-    "gf_df_note": "GF and DF are SEPARATE fields (official / directory / chain). Preference not celiac; cross-contamination OK. Do not hide a place for a missing tag. Do not upgrade unknown to safe.",
-    "filters_do_not_pick_a_winner": true,
-    "skip_all_is_valid": true,
-    "empty_list_is_not_nothing": true,
-    "disagreeing_sources": "print both, never average"
+    "_comment": [
+      "What each subject is actually DOING during the trip window, and what that",
+      "means for the chance of an interesting frame rather than a portrait.",
+      "Sourced and dated. Karl named 'action -- flight, hunting, rut' as one of the",
+      "three things that make a shot great, so this decides real points and must",
+      "not be recalled at runtime.",
+      "Re-check before any trip in a different season: every entry here is seasonal."
+    ],
+    "fetched": "2026-08-19",
+    "trip_window": {
+      "from": "2026-09-27",
+      "to": "2026-10-05"
+    },
+    "subjects": {
+      "elk": {
+        "action": "high",
+        "detail": "Rut. Elk descend from the high country to montane meadows for the autumn breeding season, and are most active morning and evening. Bugling and sparring are the frame worth having.",
+        "restriction": "During the rut, RMNP meadow areas prohibit foot travel off established roadways and designated trails from 17:00 to 10:00 daily. Evening elk work is roadside by regulation. Keep 75 ft (two bus lengths) minimum.",
+        "places_named_by_source": [
+          "Horseshoe Park",
+          "Moraine Park",
+          "Upper Beaver Meadows",
+          "Harbison Meadow",
+          "Holzwarth Meadow"
+        ],
+        "source": "https://www.nps.gov/romo/learn/nature/elk.htm",
+        "fetched": "2026-08-19"
+      },
+      "bighorn": {
+        "action": "low",
+        "detail": "NOT in rut during this trip. Bighorn breed in November and December, peaking in early December, so rams will be solitary or in bachelor groups rather than clashing. Rams are present and photographable; the head-butting is six to eight weeks after Karl goes home.",
+        "restriction": null,
+        "places_named_by_source": [],
+        "source": "https://cpw.state.co.us/species/rocky-mountain-bighorn-sheep",
+        "fetched": "2026-08-19"
+      },
+      "raptors": {
+        "action": "high",
+        "detail": "Soaring on thermals is flight, not a perch -- the behaviour is the shot. Thermals need a few hours of sun on the ground, so this is a mid-morning to mid-afternoon subject.",
+        "restriction": null,
+        "places_named_by_source": [],
+        "source": "engine/sun.py thermal_window; threshold is a rule of thumb, not validated against observation data",
+        "fetched": "2026-08-19"
+      },
+      "owls": {
+        "action": "medium",
+        "detail": "Hunting begins at dusk, but most keeper frames are a perched bird in very low light. Action is possible rather than likely, and it is the hardest exposure on the trip.",
+        "restriction": null,
+        "places_named_by_source": [],
+        "source": "shoot-planner/engine/advise.py SUBJECTS: owl_perched, 1/200 s",
+        "fetched": "2026-08-19"
+      },
+      "landscape": {
+        "action": "none",
+        "detail": "Static subject. Light is the whole game, so this scores on the light term and nothing else.",
+        "restriction": null,
+        "places_named_by_source": [],
+        "source": null,
+        "fetched": "2026-08-19"
+      },
+      "fall-color": {
+        "action": "none",
+        "detail": "Static, and additionally dependent on this year's timing, which moves with summer moisture and must be checked against current reports near the date.",
+        "restriction": null,
+        "places_named_by_source": [],
+        "source": null,
+        "fetched": "2026-08-19"
+      }
+    }
   },
-  "export_note": "Recovered prefix (places, trip, runs, days 2026-09-27..2026-10-02 light) is engine JSON. Remaining keys are inventory from the task: names and stated gaps only — no invented businesses, miles, elevations, times, or webcam URLs. Replace this file with the engine trip-bundle.json when available."
+  "foliage": {
+    "model": {
+      "rule": "Colour descends ~1.5 days per 100 m of elevation.",
+      "anchor": "8000 ft on 2026-09-25",
+      "source": "https://morethanjustparks.com/foliage-tracker/colorado",
+      "fetched": "2026-08-28",
+      "status": "MODEL, not observation. The same page's county forecast (Larimer and Boulder, Sep 17-21) disagrees with this rule at low elevation. Show both.",
+      "bands": [
+        {
+          "place": "Trail Ridge high country",
+          "elevation_ft": 11796,
+          "modelled_peak": "2026-09-07"
+        },
+        {
+          "place": "Bear Lake area",
+          "elevation_ft": 9475,
+          "modelled_peak": "2026-09-18"
+        },
+        {
+          "place": "Nederland",
+          "elevation_ft": 8233,
+          "modelled_peak": "2026-09-23"
+        },
+        {
+          "place": "Estes Park",
+          "elevation_ft": 7522,
+          "modelled_peak": "2026-09-27"
+        },
+        {
+          "place": "Drake",
+          "elevation_ft": 6195,
+          "modelled_peak": "2026-10-03"
+        }
+      ]
+    },
+    "county_forecast": {
+      "Larimer": [
+        "2026-09-17",
+        "2026-09-21"
+      ],
+      "Boulder": [
+        "2026-09-17",
+        "2026-09-21"
+      ]
+    },
+    "sources": [
+      {
+        "name": "Explore Fall \u2014 Colorado map",
+        "url": "https://www.explorefall.com/states/colorado.html",
+        "what": "Interactive map with a date slider; states that it updates daily against real-time weather.",
+        "kind": "tracker"
+      },
+      {
+        "name": "More Than Just Parks \u2014 Colorado tracker",
+        "url": "https://morethanjustparks.com/foliage-tracker/colorado",
+        "what": "County-level peak windows for all 64 counties. Source of the elevation rule used above. No stated data source or update rate.",
+        "kind": "tracker"
+      },
+      {
+        "name": "Old Farmer's Almanac fall foliage map",
+        "url": "https://www.almanac.com/fall-foliage-map",
+        "what": "National forecast map.",
+        "kind": "tracker"
+      },
+      {
+        "name": "RMNP \u2014 Learn About Fall Colors",
+        "url": "https://www.nps.gov/romo/learn/nature/learn-about-fall-colors.htm",
+        "what": "Park Service guidance for the park itself.",
+        "kind": "official"
+      },
+      {
+        "name": "Arapaho & Roosevelt NF \u2014 current conditions",
+        "url": "https://www.fs.usda.gov/r02/arp/conditions",
+        "what": "No foliage report, BUT this is the authoritative Brainard Lake ROAD STATUS table \u2014 the gate question for the Nederland days.",
+        "kind": "official"
+      }
+    ],
+    "webcams": [
+      {
+        "name": "Alpine Visitor Center",
+        "note": "Highest camera \u2014 colour here is finished first.",
+        "url": "https://www.nps.gov/webcams-romo/alpine_visitor_center.jpg"
+      },
+      {
+        "name": "Glacier Basin",
+        "note": "",
+        "url": "https://www.nps.gov/webcams-romo/glacier_basin.jpeg"
+      },
+      {
+        "name": "Longs Peak",
+        "note": "Tahosa Valley view. Geocoded 40.2720,-105.5565 at 9,390 ft \u2014 the only camera whose elevation could be established.",
+        "url": "https://www.nps.gov/webcams-romo/longs_peak.jpg"
+      },
+      {
+        "name": "Fall River Entrance",
+        "note": "",
+        "url": "https://www.nps.gov/webcams-romo/fre.jpg"
+      },
+      {
+        "name": "Beaver Meadows Entrance",
+        "note": "Just west of Estes Park on US-36 \u2014 closest camera to the Drake side.",
+        "url": "https://www.nps.gov/webcams-romo/bme.jpeg"
+      },
+      {
+        "name": "Kawuneeche Valley",
+        "note": "Harbison Meadow, one of the meadows NPS names for elk in the rut.",
+        "url": "https://www.nps.gov/webcams-romo/kawuneeche_valley.jpeg"
+      },
+      {
+        "name": "Grand Lake Entrance",
+        "note": "",
+        "url": "https://www.nps.gov/webcams-romo/Grand_Lake_Entrance.jpg"
+      }
+    ],
+    "webcams_page": "https://www.nps.gov/romo/learn/photosmultimedia/webcams.htm",
+    "ranking": "A webcam still outranks any forecast on this page. Present pictures first, model last."
+  },
+  "gate": {
+    "source": "https://www.fs.usda.gov/r02/arp/conditions",
+    "how": "Boulder Ranger District road status table; look for 'Brainard Lake Entrance Gate to Day-Use Parking Area'.",
+    "last_seen": "OPEN, per the table's 2026-08-10 update",
+    "checked": "2026-08-28",
+    "why": "Timed-entry tickets end Oct 1 and Karl is there Oct 2-5. If the gate is shut, Gateway parking adds ~5 mi round trip and Lake Isabelle stops being a moderate half-day."
+  },
+  "provenance": {
+    "sun/moon": "engine/sun.py, engine/moon.py \u2014 NOAA and truncated ELP2000-82, offline. Verified against api.sunrise-sunset.org (48/48) and USNO (45/45), each with a mutation that must be caught.",
+    "drive times": "OSRM public router. Never estimated from straight-line distance.",
+    "elevation": "USGS EPQS 1 m raster, Open-Elevation fallback.",
+    "birds": "eBird API 2.0, PUBLIC HOTSPOTS ONLY. Personal locations are somebody's house and are filtered out.",
+    "mammals": "iNaturalist research-grade, DATE-FILTERED. A recency-limited query missed 95 September elk and reported zero.",
+    "jurisdiction": "OpenStreetMap via Overpass is_in, mirrored with a coverage canary \u2014 a regional mirror answers an out-of-area query with an empty result, not an error.",
+    "trails": "AllTrails connector (live) plus agency pages. Where they disagree BOTH figures are kept.",
+    "rules": "NPS, US Forest Service, Boulder County \u2014 each entry dated."
+  },
+  "gaps": [
+    "Return leg after the Oct 5 Nederland checkout is NOT booked and is absent from this bundle. Do not render a placeholder for it.",
+    "The Sep 27 overnight is NOT booked. Positions along the route are options with costs, never a chosen stop.",
+    "Drake's cabin pin was never confirmed \u2014 the geocoder matched the road. Elevation is a RANGE and must render as one.",
+    "No weather. NWS reaches ~7 days and the trip is further out. Regenerate in the last week and this gains a real forecast.",
+    "Bird records show what was REPORTED. Silence is silence, never absence.",
+    "RMNP timed-entry permits are not booked."
+  ]
 }

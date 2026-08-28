@@ -85,15 +85,19 @@ describe("trip-bundle", () => {
     assert.match(gaps, /Return after/);
   });
 
-  it("keeps food as a present empty list, not a missing collection", () => {
-    const food = bundle.food as { engine_count: number; items: unknown[] };
-    assert.equal(food.engine_count, 19);
-    assert.equal(food.items.length, 0);
-    assert.equal(collectionItems(bundle, "food", "food").length, 0);
+  it("reads the engine food places (19) without inventing names", () => {
+    const food = bundle.food as { places: Array<{ name: string }> };
+    assert.equal(food.places.length, 19);
+    const items = collectionItems(bundle, "food", "food");
+    assert.equal(items.length, 19);
+    assert.ok(items.some((p) => p.name === "The Country Market of Estes Park"));
   });
 
-  it("records bighorn not in rut", () => {
-    const land = bundle.land_rules as { bighorn_rut: boolean };
-    assert.equal(land.bighorn_rut, false);
+  it("records bighorn not in rut from engine behaviour", () => {
+    const behaviour = bundle.behaviour as {
+      subjects: { bighorn: { action: string; detail: string } };
+    };
+    assert.equal(behaviour.subjects.bighorn.action, "low");
+    assert.match(behaviour.subjects.bighorn.detail, /NOT in rut/i);
   });
 });

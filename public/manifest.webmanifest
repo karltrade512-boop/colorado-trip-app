@@ -1,0 +1,25 @@
+{
+  "name": "Colorado trip",
+  "short_name": "CO trip",
+  "description": "Karl’s Colorado photography trip — truck, cabin, and home. Not an itinerary.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16302a",
+  "theme_color": "#16302a",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

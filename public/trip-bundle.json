@@ -1,0 +1,681 @@
+{
+  "schema_version": "1.0.0",
+  "generated": "2026-08-28T16:33:35",
+  "contract": {
+    "read_only": true,
+    "renderer_may": [
+      "sort",
+      "filter",
+      "group",
+      "paginate",
+      "style",
+      "hide behind a control the user opens"
+    ],
+    "renderer_may_not": [
+      "call any external API",
+      "compute a new number from these values",
+      "invent a field, place, business or trail",
+      "average two disagreeing sources into one figure",
+      "present an unconfirmed elevation as a single number",
+      "persist anything in browser storage"
+    ],
+    "why": "Every no-fabrication guarantee is enforced in the engine. A renderer that fetches its own data breaks all of them."
+  },
+  "trip": {
+    "name": "Colorado 2026",
+    "first_day": "2026-09-27",
+    "last_day": "2026-10-05",
+    "shape": "multi-base",
+    "region": "Colorado Front Range — Big Thompson Canyon and Nederland",
+    "subjects": [
+      "raptors",
+      "owls",
+      "fall-color",
+      "elk",
+      "bighorn",
+      "landscape"
+    ],
+    "detour_minutes": 20,
+    "hike_miles_each_way": [
+      1.5,
+      4.0
+    ],
+    "visited": [
+      "Emerald Lake",
+      "Lake Haiyaha"
+    ],
+    "preferences": {
+      "dogs": true,
+      "night_sky": true,
+      "no_early_mornings": true,
+      "no_early_mornings_meaning": "SORT KEY, NOT A FILTER. Early options stay on the list with their cost attached and sort last. Never hide them."
+    }
+  },
+  "places": {
+    "drake": {
+      "name": "Drake, CO",
+      "lat": 40.4322,
+      "lon": -105.34,
+      "tz": "America/Denver",
+      "check_in": "16:00",
+      "elevation_ft_measured": 6162,
+      "elevation_ft_range": [
+        6081,
+        6308
+      ],
+      "elevation_confirmed": false,
+      "elevation_display": "6,081-6,308 ft (pin unconfirmed)"
+    },
+    "nederland": {
+      "name": "Nederland, CO",
+      "lat": 39.9614,
+      "lon": -105.5108,
+      "tz": "America/Denver",
+      "check_in": "16:00",
+      "elevation_ft_measured": 8233,
+      "elevation_ft_range": [
+        8233,
+        8233
+      ],
+      "elevation_confirmed": false,
+      "elevation_display": "~8,233 ft (pin unconfirmed)"
+    },
+    "origin": {
+      "name": "Buda, TX",
+      "lat": 30.0918,
+      "lon": -97.8534,
+      "tz": "America/Chicago",
+      "check_in": null,
+      "elevation_ft_measured": null,
+      "elevation_ft_range": null,
+      "elevation_confirmed": false,
+      "elevation_display": "elevation unavailable"
+    }
+  },
+  "runs": {
+    "buda-to-drake": {
+      "from": "origin",
+      "to": "drake",
+      "arrive_by": "2026-09-28T16:00:00",
+      "overnight": "open",
+      "note": "18.3 h total. Sleeping earlier on the line costs a harder second day."
+    }
+  },
+  "days": [
+    {
+      "date": "2026-09-27",
+      "kind": "driving",
+      "base": null,
+      "run": "buda-to-drake",
+      "from": null,
+      "to": null,
+      "light": {
+        "sunrise": "07:21",
+        "sunset": "19:22",
+        "golden_am": [
+          "07:07",
+          "07:53"
+        ],
+        "golden_pm": [
+          "18:50",
+          "19:36"
+        ],
+        "civil_dawn": "06:58",
+        "civil_dusk": "19:45",
+        "thermals": [
+          "09:48",
+          "16:55"
+        ],
+        "moon": {
+          "phase": "Waning gibbous",
+          "illumination_pct": 97.4,
+          "moonrise": "19:47",
+          "moonset": "08:20",
+          "astronomical_dusk": "20:41",
+          "dark_window": [
+            "20:41",
+            "20:23"
+          ],
+          "verdict": "23.7 h of real darkness between 20:41 and moonrise at 20:23 (after midnight)."
+        }
+      },
+      "light_computed_for": "Buda, TX"
+    },
+    {
+      "date": "2026-09-28",
+      "kind": "driving",
+      "base": null,
+      "run": "buda-to-drake",
+      "from": null,
+      "to": null,
+      "light": {
+        "sunrise": "07:21",
+        "sunset": "19:21",
+        "golden_am": [
+          "07:08",
+          "07:54"
+        ],
+        "golden_pm": [
+          "18:49",
+          "19:35"
+        ],
+        "civil_dawn": "06:59",
+        "civil_dusk": "19:44",
+        "thermals": [
+          "09:49",
+          "16:54"
+        ],
+        "moon": {
+          "phase": "Waning gibbous",
+          "illumination_pct": 92.6,
+          "moonrise": "20:23",
+          "moonset": "09:25",
+          "astronomical_dusk": "20:39",
+          "dark_window": [
+            "20:39",
+            "21:05"
+          ],
+          "verdict": "24.4 h of real darkness between 20:39 and moonrise at 21:05 (after midnight)."
+        }
+      },
+      "light_computed_for": "Buda, TX"
+    },
+    {
+      "date": "2026-09-29",
+      "kind": "based",
+      "base": "drake",
+      "run": null,
+      "from": null,
+      "to": null,
+      "light": {
+        "sunrise": "06:54",
+        "sunset": "18:48",
+        "golden_am": [
+          "06:38",
+          "07:31"
+        ],
+        "golden_pm": [
+          "18:11",
+          "19:03"
+        ],
+        "civil_dawn": "06:28",
+        "civil_dusk": "19:13",
+        "thermals": [
+          "09:47",
+          "15:54"
+        ],
+        "moon": {
+          "phase": "Waning gibbous",
+          "illumination_pct": 85.3,
+          "moonrise": "20:06",
+          "moonset": "10:31",
+          "astronomical_dusk": "20:17",
+          "dark_window": [
+            "20:17",
+            "20:50"
+          ],
+          "verdict": "24.5 h of real darkness between 20:17 and moonrise at 20:50 (after midnight)."
+        }
+      },
+      "light_computed_for": "Drake, CO"
+    },
+    {
+      "date": "2026-09-30",
+      "kind": "based",
+      "base": "drake",
+      "run": null,
+      "from": null,
+      "to": null,
+      "light": {
+        "sunrise": "06:55",
+        "sunset": "18:46",
+        "golden_am": [
+          "06:39",
+          "07:32"
+        ],
+        "golden_pm": [
+          "18:09",
+          "19:01"
+        ],
+        "civil_dawn": "06:29",
+        "civil_dusk": "19:12",
+        "thermals": [
+          "09:49",
+          "15:52"
+        ],
+        "moon": {
+          "phase": "Waning gibbous",
+          "illumination_pct": 76.3,
+          "moonrise": "20:50",
+          "moonset": "11:48",
+          "astronomical_dusk": "20:15",
+          "dark_window": [
+            "20:15",
+            "20:50"
+          ],
+          "verdict": "0.6 h of real darkness between 20:15 and moonrise at 20:50."
+        }
+      },
+      "light_computed_for": "Drake, CO"
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "based",
+      "base": "drake",
+      "run": null,
+      "from": null,
+      "to": null,
+      "light": {
+        "sunrise": "06:56",
+        "sunset": "18:44",
+        "golden_am": [
+          "06:40",
+          "07:33"
+        ],
+        "golden_pm": [
+          "18:07",
+          "19:00"
+        ],
+        "civil_dawn": "06:30",
+        "civil_dusk": "19:10",
+        "thermals": [
+          "09:51",
+          "15:50"
+        ],
+        "moon": {
+          "phase": "Waning gibbous",
+          "illumination_pct": 65.9,
+          "moonrise": "21:44",
+          "moonset": "13:00",
+          "astronomical_dusk": "20:13",
+          "dark_window": [
+            "20:13",
+            "21:44"
+          ],
+          "verdict": "1.5 h of real darkness between 20:13 and moonrise at 21:44."
+        }
+      },
+      "light_computed_for": "Drake, CO"
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "driving",
+      "base": "nederland",
+      "run": null,
+      "from": "drake",
+      "to": "nederland",
+      "light": {
+        "sunrise": "06:57",
+        "sunset": "18:44",
+        "golden_am": [
+          "06:42",
+          "07:34"
+        ],
+        "golden_pm": [
+          "18:07",
+          "18:59"
+        ],
+        "civil_dawn": "06:32",
+        "civil_dusk": "19:09",
+        "thermals": [
+          "09:51",
+          "15:50"
+        ],
+        "moon": {
+          "phase": "Last quarter",
+          "illumination_pct": 54.6,
+          "moonrise": "22:51",
+          "moonset": "14:04",
+          "astronomical_dusk": "20:12",
+          "dark_window": [
+            "20:12",
+            "22:51"
+          ],
+          "verdict": "2.7 h of real darkness between 20:12 and moonrise at 22:51."
+        }
+      },
+      "light_computed_for": "Nederland, CO"
+    },
+    {
+      "date": "2026-10-03",
+      "kind": "based",
+      "base": "nederland",
+      "run": null,
+      "from": null,
+      "to": null,
+      "light": null,
+      "light_computed_for": "Nederland, CO",
+      "note": "Light fields for this day were not in the recovered export."
+    },
+    {
+      "date": "2026-10-04",
+      "kind": "based",
+      "base": "nederland",
+      "run": null,
+      "from": null,
+      "to": null,
+      "light": {
+        "moon": {
+          "verdict": "5.2 h of real darkness"
+        }
+      },
+      "light_computed_for": "Nederland, CO",
+      "note": "Darkest night in the engine inventory. Sunrise/sunset not in the recovered export."
+    },
+    {
+      "date": "2026-10-05",
+      "kind": "based",
+      "base": "nederland",
+      "run": null,
+      "from": null,
+      "to": null,
+      "light": null,
+      "light_computed_for": "Nederland, CO",
+      "note": "Light fields for this day were not in the recovered export."
+    }
+  ],
+  "hikes": [
+    {
+      "id": "hike-1",
+      "name": "Lake Isabelle",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-2",
+      "name": "Blue Lake",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-3",
+      "name": "Mitchell",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-4",
+      "name": "Long Lake",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-5",
+      "name": "The Loch",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-6",
+      "name": "Lake Helene",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-7",
+      "name": "Sky Pond",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-8",
+      "name": "Chasm",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-9",
+      "name": "Ouzel",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-10",
+      "name": "Bluebird",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-11",
+      "name": "Lost Lake Hessie",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-12",
+      "name": "Jean Lunning loop",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-13",
+      "name": "Diamond Lake",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-14",
+      "name": "Lake Dorothy/Arapaho Pass",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    },
+    {
+      "id": "hike-15",
+      "name": "Columbine Lake",
+      "miles_alltrails": null,
+      "miles_agency": null,
+      "elevation_display": null,
+      "dogs": null,
+      "permit": null,
+      "subjects": null,
+      "note": "Name from engine inventory. AllTrails miles, agency miles, elevation, dog rule, and permit are not in this recovered file."
+    }
+  ],
+  "food": {
+    "engine_count": 19,
+    "areas": [
+      "estes_park",
+      "nederland",
+      "lubbock",
+      "amarillo"
+    ],
+    "items": [],
+    "note": "Engine inventory: 19 places, GF and DF as separate fields (official / directory / chain). Names, tags, and addresses are not in this recovered file. Empty list ≠ nothing here. Do not hide a place for a missing tag; do not upgrade unknown to safe. Preference not celiac; cross-contamination OK."
+  },
+  "photo_ops": {
+    "items": [],
+    "note": "Photo-op / hotspot records were not in the recovered export. Hiking nav is AllTrails, not this app."
+  },
+  "foliage": {
+    "as_of": "2026-08-28",
+    "kind_now": "FORECAST",
+    "FORECAST": {
+      "as_of": "2026-08-28",
+      "text": "As of 2026-08-28 this is a forecast, not a measured peak. Trip is on the back side of Estes / Peak to Peak."
+    },
+    "OBSERVATION": {
+      "as_of": null,
+      "text": null,
+      "note": "No observation in this recovered file. Model disagrees with county forecast — print both when present. Unknown stays unknown; a failed live fetch is not “no color”."
+    },
+    "disagreement": "Model disagrees with county forecast. Print both. Do not average."
+  },
+  "gate": {
+    "id": "brainard",
+    "name": "Brainard",
+    "last_seen": "OPEN",
+    "last_seen_table": "2026-08-10",
+    "checked": "2026-08-28",
+    "timed_entry_ends": "2026-10-01",
+    "note": "Karl there Oct 2–5 after timed-entry ends Oct 1. last_seen OPEN is from the table dated 2026-08-10, checked 2026-08-28. A failed live fetch is not “closed”.",
+    "url": null
+  },
+  "webcams": {
+    "items": [],
+    "note": "Webcam URLs were in the engine export and are not in this recovered file. Live fetches are display-only; stamp fetched-at; fail visibly."
+  },
+  "gaps": [
+    {
+      "id": "overnight-sep27",
+      "name": "Sep 27 overnight not booked",
+      "note": "Open. Options with costs, never a chosen stop."
+    },
+    {
+      "id": "return-after-oct5",
+      "name": "Return after Oct 5 not booked",
+      "note": "No invented itinerary."
+    },
+    {
+      "id": "drake-pin",
+      "name": "Drake pin unconfirmed",
+      "note": "elevation_display is a range."
+    },
+    {
+      "id": "weather",
+      "name": "No weather yet",
+      "note": null
+    },
+    {
+      "id": "birds",
+      "name": "Bird silence is silence",
+      "note": "No eBird path. App must not call eBird."
+    },
+    {
+      "id": "rmnp-timed-entry",
+      "name": "RMNP timed-entry not booked",
+      "note": null
+    },
+    {
+      "id": "light-oct3-5",
+      "name": "Oct 3 and Oct 5 light not in recovered export",
+      "note": "Oct 4 darkness 5.2 h is from inventory; other light fields unknown."
+    },
+    {
+      "id": "food-names",
+      "name": "19 food places named in the engine; names not in this recovered file",
+      "note": "Areas: estes_park, nederland, lubbock, amarillo."
+    },
+    {
+      "id": "hike-figures",
+      "name": "Hike AllTrails and agency figures not in this recovered file",
+      "note": "Print both when present. Never average."
+    },
+    {
+      "id": "webcam-urls",
+      "name": "Webcam URLs not in this recovered file",
+      "note": null
+    }
+  ],
+  "open_decisions": [
+    {
+      "id": "sep27-overnight",
+      "name": "Sep 27 overnight",
+      "status": "open",
+      "note": "Options with costs, never a chosen stop.",
+      "options": [],
+      "options_note": "Costed overnight options were not in the recovered export."
+    },
+    {
+      "id": "brainard-lake-split",
+      "name": "Lake hike split by Brainard gate",
+      "status": "open",
+      "note": "Gate last_seen OPEN (table 2026-08-10), checked 2026-08-28. Timed-entry ends Oct 1. Which lake hike depends on the gate; this app does not pick a winner."
+    },
+    {
+      "id": "return-after-oct5",
+      "name": "Return after Oct 5 unbooked",
+      "status": "open",
+      "note": "No invented itinerary."
+    }
+  ],
+  "land_rules": {
+    "drake_pin": "unconfirmed",
+    "bighorn_rut": false,
+    "bighorn_rut_note": "Bighorn are NOT in rut.",
+    "rmnp_timed_entry": "not booked",
+    "brainard_timed_entry_ends": "2026-10-01",
+    "dogs_unknown_meaning": "Dog-rule unknown ≠ banned and ≠ fine.",
+    "note": "Print land rules from the bundle. Unknown stays unknown."
+  },
+  "behaviour": {
+    "no_early_mornings": "sort_key",
+    "no_early_mornings_note": "SORT KEY, not a filter. Early options stay on the list and sort last.",
+    "gf_df": "separate",
+    "gf_df_note": "GF and DF are SEPARATE fields (official / directory / chain). Preference not celiac; cross-contamination OK. Do not hide a place for a missing tag. Do not upgrade unknown to safe.",
+    "filters_do_not_pick_a_winner": true,
+    "skip_all_is_valid": true,
+    "empty_list_is_not_nothing": true,
+    "disagreeing_sources": "print both, never average"
+  },
+  "export_note": "Recovered prefix (places, trip, runs, days 2026-09-27..2026-10-02 light) is engine JSON. Remaining keys are inventory from the task: names and stated gaps only — no invented businesses, miles, elevations, times, or webcam URLs. Replace this file with the engine trip-bundle.json when available."
+}

@@ -191,38 +191,119 @@ function sortItems(
   });
 }
 
+function prettyDate(iso: string | undefined): string {
+  if (!iso) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  const dt = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return dt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+}
+
+function dogLabel(raw: Record<string, unknown>): string {
+  const rawDog = raw.dogs ?? raw.dog_rule ?? raw.dogs_allowed;
+  if (typeof rawDog === "string" && rawDog.trim()) return rawDog.trim();
+  const st = dogStatus(raw);
+  if (st === "ok") return "leashed / allowed";
+  if (st === "banned") return "prohibited";
+  return "unknown";
+}
+
+function foodServesBases(bundle: TripBundle, placeArea: string | undefined): string[] {
+  if (!placeArea) return [];
+  const food = collection(bundle, "food");
+  if (isRecord(food) && isRecord(food.areas)) {
+    const block = food.areas[placeArea];
+    if (isRecord(block) && Array.isArray(block.serves)) return block.serves.map(String);
+  }
+  return [placeArea];
+}
+
+function foodForDay(bundle: TripBundle, day: Day | undefined): ReturnType<typeof namedItems> {
+  const items = foodItems(bundle);
+  const base = areaForDay(day);
+  if (!base) return items;
+  return items.filter((f) => {
+    const a = areaOf(f.raw);
+    if (!a) return true;
+    const serves = foodServesBases(bundle, a);
+    if (base === "driving") return serves.includes("route") || a === "driving";
+    return serves.includes(base) || a === base;
+  });
+}
+
+function detailsBlock(rows: Array<[string, string | undefined | null]>, extra = ""): string {
+  const kept = rows.filter(([, v]) => v != null && String(v).trim());
+  if (!kept.length && !extra) return "";
+  return `<details class="more-facts"><summary>Details</summary>
+    ${kept.map(([k, v]) => `<p><span class="k">${esc(k)}</span> ${esc(String(v))}</p>`).join("")}
+    ${extra}
+  </details>`;
+}
+
 function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""): string {
   const dog = dogStatus(item.raw);
-  const miles = milesLines(item.raw);
-  const elev = elevationLine(item.raw);
-  const permit = permitOf(item.raw);
-  const subs = subjectOf(item.raw);
-  const area = areaOf(item.raw);
-  const coords = itemLatLon(item.raw);
-  const diet = gfDf(item.raw);
+  const bannedFold = state.dogsWithUs && dog === "banned";
   const early = earlyCost(item.raw);
   const low = rankGroup(item.raw) === "low";
-  const bannedFold = state.dogsWithUs && dog === "banned";
-  return `<article class="card ${extraClass} ${bannedFold ? "folded-dogs" : ""}" data-id="${esc(item.id)}">
-    <h3>${esc(item.name)}</h3>
-    <p class="meta">
-      <span class="pill dog-${dog}">dogs: ${dog}</span>
-      ${permit ? `<span class="pill">${esc(permit)}</span>` : `<span class="pill dim">permit unknown</span>`}
-      ${area ? `<span class="pill">${esc(area)}</span>` : ""}
-      ${early ? `<span class="pill warn">early — sorts last</span>` : ""}
-      ${low ? `<span class="pill dim">low-ranked</span>` : ""}
-    </p>
-    ${miles.length ? `<ul class="facts">${miles.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>` : `<p class="gap">Miles/length not in this bundle. AllTrails and agency figures print separately when present — never averaged.</p>`}
-    <p class="facts">${esc(elev)}</p>
-    ${subs.length ? `<p class="meta">${subs.map((s) => `<span class="pill">${esc(s)}</span>`).join("")}</p>` : ""}
-    ${item.raw.note ? `<p class="note">${esc(String(item.raw.note))}</p>` : ""}
-    ${
-      extraClass === "food" || "gf" in item.raw || "df" in item.raw
-        ? `<p class="diet">${esc(diet.gf)} · ${esc(diet.df)}</p>`
-        : ""
-    }
-    ${coords ? `<a class="btn" href="${esc(mapsUrl(coords.lat, coords.lon, item.name))}">Open in Maps</a>` : `<p class="gap">No pin in this bundle — hiking nav is AllTrails, not this app.</p>`}
-    ${bannedFold ? `<p class="note">Not with the dogs — folded, not removed.</p>` : ""}
+  const isFood = extraClass === "food" || "gluten_free" in item.raw || "dairy_free" in item.raw || "gf" in item.raw;
+
+  if (isFood) {
+    const diet = gfDf(item.raw);
+    const quotes: string[] = [];
+    if (diet.gfQuote) quotes.push(`GF: “${diet.gfQuote}”`);
+    if (diet.dfQuote) quotes.push(`DF: “${diet.dfQuote}”`);
+    const addr = str(item.raw.address);
+    return `<article class="card ${bannedFold ? "folded-dogs" : ""}" data-id="${esc(item.id)}">
+      <h3>${esc(item.name)}</h3>
+      <p class="lede">${esc(diet.gf)} <span class="dot">·</span> ${esc(diet.df)}</p>
+      <p class="whisper">${esc(areaOf(item.raw) ?? "")}${str(item.raw.kind) ? ` · ${esc(str(item.raw.kind)!)}` : ""}</p>
+      ${detailsBlock(
+        [
+          ["Address", addr],
+          ["Note", str(item.raw.note)],
+        ],
+        quotes.length
+          ? `<details class="quote"><summary>Quoted from source</summary>${quotes.map((q) => `<p>${esc(q)}</p>`).join("")}</details>`
+          : "",
+      )}
+      ${bannedFold ? `<p class="whisper">Not with the dogs — folded, not removed.</p>` : ""}
+    </article>`;
+  }
+
+  const miles = milesLines(item.raw);
+  const coords = itemLatLon(item.raw);
+  const atUrl = isRecord(item.raw.alltrails) ? str(item.raw.alltrails.url) : undefined;
+  const elev = elevationLine(item.raw);
+  const permit = permitOf(item.raw);
+  const disagreement = str(item.raw.disagreement);
+  const secondary = miles.length
+    ? miles.map((m) => `<span>${esc(m)}</span>`).join("<br>")
+    : "Miles/length not in this bundle. AllTrails and agency print separately when present.";
+  const extras: string[] = [];
+  if (atUrl) extras.push(`<p><a href="${esc(atUrl)}">AllTrails listing</a></p>`);
+  if (coords) extras.push(`<p><a class="btn small" href="${esc(mapsUrl(coords.lat, coords.lon, item.name))}">Open in Maps</a></p>`);
+  if (early) extras.push(`<p class="whisper">Early — sorts last (sort key, not hidden).</p>`);
+  if (low) extras.push(`<p class="whisper">Low-ranked — still here.</p>`);
+  if (bannedFold) extras.push(`<p class="whisper">Not with the dogs — folded, not removed.</p>`);
+
+  return `<article class="card ${bannedFold ? "folded-dogs" : ""}" data-id="${esc(item.id)}">
+    <div class="card-head">
+      <h3>${esc(item.name)}</h3>
+      <span class="badge quiet dog-${dog}">${esc(dogLabel(item.raw))}</span>
+    </div>
+    <p class="lede">${secondary}</p>
+    ${disagreement ? `<p class="whisper">${esc(disagreement)}</p>` : ""}
+    ${detailsBlock(
+      [
+        ["Elevation", elev === "elevation unknown" ? undefined : elev],
+        ["Area", areaOf(item.raw)],
+        ["Trailhead", str(item.raw.trailhead)],
+        ["Permit", permit],
+        ["Access", str(item.raw.access_risk)],
+        ["Note", str(item.raw.note) ?? str(item.raw.correction)],
+      ],
+      extras.join(""),
+    )}
   </article>`;
 }
 
@@ -245,7 +326,7 @@ function renderToday(bundle: TripBundle): string {
   const pick = nextOrToday(bundle, now);
   const day = pick.day;
   const area = areaForDay(day);
-  const food = foodItems(bundle).filter((f) => !area || area === "driving" || !areaOf(f.raw) || areaOf(f.raw) === area);
+  const food = foodForDay(bundle, day);
   const items = sortItems(
     menuItems(bundle).filter((it) => matchesFilters(it.raw, state.filters)),
     bundle,
@@ -254,12 +335,12 @@ function renderToday(bundle: TripBundle): string {
   const low = items.filter((i) => rankGroup(i.raw) === "low");
   const statusLine =
     pick.status === "today"
-      ? `Today ${now}`
+      ? prettyDate(now)
       : pick.status === "before"
-        ? `Trip has not started (${now}). Showing first trip day ${day?.date ?? "—"}.`
+        ? `Trip has not started (${prettyDate(now)}). First day ${prettyDate(day?.date)}.`
         : pick.status === "after"
-          ? `After last day in days[] (${now}).`
-          : `Today ${now} has no days[] row — gap.`;
+          ? `After last day in days[] (${prettyDate(now)}).`
+          : `Today ${prettyDate(now)} has no days[] row — gap.`;
 
   const gotchas: string[] = [];
   if (area) {
@@ -272,23 +353,27 @@ function renderToday(bundle: TripBundle): string {
     if (land.rmnp_timed_entry) gotchas.push(`RMNP timed-entry: ${String(land.rmnp_timed_entry)}`);
     if (land.bighorn_rut === false) gotchas.push("Bighorn are NOT in rut.");
   }
+  const behaviour = collection(bundle, "behaviour");
+  if (isRecord(behaviour) && isRecord(behaviour.subjects) && isRecord(behaviour.subjects.bighorn)) {
+    const detail = str(behaviour.subjects.bighorn.detail);
+    if (detail) gotchas.push(detail);
+  }
   const gate = collection(bundle, "gates");
   if (isRecord(gate)) {
-    gotchas.push(
-      `Brainard last_seen ${str(gate.last_seen) ?? "unknown"} (table ${str(gate.last_seen_table) ?? "—"}; checked ${str(gate.checked) ?? "—"})`,
-    );
+    gotchas.push(`Brainard last_seen: ${str(gate.last_seen) ?? "unknown"}${str(gate.checked) ? ` · checked ${str(gate.checked)}` : ""}`);
   }
 
   const foliage = foliageBlocks(collection(bundle, "foliage"));
+  const titleDate = prettyDate(day?.date) || prettyDate(now) || "Today";
 
-  return `<section>
-    <p class="kicker">${esc(statusLine)}</p>
-    <h1>${esc(bundle.trip?.name ?? "Trip")}</h1>
+  return `<section class="today">
+    <p class="kicker">${esc(statusLine === titleDate ? bundle.trip?.name ?? "Trip" : statusLine)}</p>
+    <h1>${esc(titleDate)}</h1>
     <p class="lightline">${esc(oneLineLight(day))}</p>
-    <p class="meta">${esc(cacheAge(state.loadedAt))} · ${esc(state.source)}${bundle.generated ? ` · bundle ${esc(bundle.generated)}` : ""}</p>
-    ${day?.note ? `<p class="gap">${esc(String(day.note))}</p>` : ""}
-    <h2>Possible hikes &amp; photo ops</h2>
-    <p class="note">Menu, not a schedule. Skip all of these is valid. Hiking nav is AllTrails.</p>
+    <p class="whisper">${esc(cacheAge(state.loadedAt))} · ${esc(state.source)}${bundle.generated ? ` · bundle ${esc(bundle.generated)}` : ""}</p>
+    ${day?.note ? `<details class="fold"><summary>Day note</summary><p>${esc(String(day.note))}</p></details>` : ""}
+    <h2>Hikes &amp; photo ops</h2>
+    <p class="note">A menu, not a schedule. Skip all is valid. Hiking nav is AllTrails.</p>
     ${emptyOrMissing("hikes", bundle, "Hikes")}
     ${high.map((i) => itemCard(i)).join("")}
     ${
@@ -299,23 +384,28 @@ function renderToday(bundle: TripBundle): string {
           </details>`
         : ""
     }
-    <h2>Food in this area</h2>
-    ${emptyOrMissing("food", bundle, "Food")}
-    ${food.map((i) => itemCard(i, "food")).join("")}
-    <h2>Dog / permit / gate</h2>
-    ${gotchas.length ? `<ul class="facts">${gotchas.map((g) => `<li>${esc(g)}</li>`).join("")}</ul>` : `<p class="gap">No gotchas block for today in this bundle.</p>`}
+    <h2>Food nearby</h2>
+    ${
+      food.length
+        ? food.map((i) => itemCard(i, "food")).join("")
+        : foodItems(bundle).length
+          ? `<p class="note">No places tagged for this base. Full list is on Food.</p>`
+          : emptyOrMissing("food", bundle, "Food")
+    }
+    <h2>Gotchas</h2>
+    ${gotchas.length ? `<ul class="facts tight">${gotchas.map((g) => `<li>${esc(g)}</li>`).join("")}</ul>` : `<p class="gap">No gotchas block for today in this bundle.</p>`}
     <h2>Fall color</h2>
     ${
       foliage.length
         ? foliage
             .map(
               (b) =>
-                `<div class="card"><p class="pill">${esc(b.kind)}</p><p>${esc(b.text)}</p>${b.as_of ? `<p class="meta">as of ${esc(b.as_of)}</p>` : `<p class="gap">as-of unknown</p>`}</div>`,
+                `<article class="card quiet-card"><p class="badge">${esc(b.kind)}</p><p>${esc(b.text)}</p>${b.as_of ? `<p class="whisper">as of ${esc(b.as_of)}</p>` : `<p class="whisper">as-of unknown</p>`}</article>`,
             )
             .join("")
         : `<p class="gap">No foliage block in this bundle.</p>`
     }
-    <p><a class="btn" href="#/print/${esc(day?.date ?? "")}">Printable day view</a></p>
+    <p class="print-link"><a href="#/print/${esc(day?.date ?? "")}">Printable day view</a></p>
   </section>`;
 }
 
@@ -332,17 +422,17 @@ function renderLight(bundle: TripBundle): string {
     <p class="note">Bundle light only. This app does not recompute sun.</p>
     ${
       darkest
-        ? `<p class="lightline">Darkest night in this file: ${esc(darkest.day.date)} · ${esc(String(darkest.hours))} h</p>`
+        ? `<p class="callout">Darkest night in this file: <strong>${esc(prettyDate(darkest.day.date))} (${esc(darkest.day.date)})</strong> · ${esc(String(darkest.hours))} h</p>`
         : `<p class="gap">Dark-hours figures not complete in this file.</p>`
     }
-    <div class="table-wrap"><table>
+    <div class="table-wrap"><table class="light-table">
       <thead><tr><th>Date</th><th>Base</th><th>Up / down</th><th>Gold AM</th><th>Gold PM</th><th>Night</th></tr></thead>
       <tbody>
         ${days
           .map((d) => {
             const L = d.light;
             return `<tr>
-              <td>${esc(d.date)}<br><span class="dim">${esc(d.kind ?? "")}</span></td>
+              <td>${esc(prettyDate(d.date))}<br><span class="whisper">${esc(d.date)} · ${esc(d.kind ?? "")}</span></td>
               <td>${esc(d.base ?? d.light_computed_for ?? "—")}</td>
               <td>${L?.sunrise && L?.sunset ? `${esc(L.sunrise)} / ${esc(L.sunset)}` : `<span class="gap">unknown</span>`}</td>
               <td>${L?.golden_am?.length ? esc(L.golden_am.join("–")) : `<span class="gap">unknown</span>`}</td>
@@ -397,7 +487,7 @@ function renderOpen(bundle: TripBundle): string {
   const overs = runsList(bundle).filter((r) => String(r.overnight).toLowerCase() === "open");
   return `<section>
     <h1>Open calls</h1>
-    <p class="note">Three decisions stay open. This app does not choose.</p>
+    <p class="note">Decisions stay open. This app does not choose.</p>
     ${
       decisions.length
         ? decisions
@@ -405,7 +495,7 @@ function renderOpen(bundle: TripBundle): string {
               const opts = namedItems(d.raw.options, "opt");
               return `<article class="card">
                 <h3>${esc(d.name)}</h3>
-                <p class="pill">${esc(str(d.raw.status) ?? "open")}</p>
+                <p class="whisper">${esc(str(d.raw.status) ?? "open")}</p>
                 ${d.raw.note ? `<p>${esc(String(d.raw.note))}</p>` : ""}
                 ${opts.length ? opts.map((o) => `<p>${esc(o.name)}${o.raw.cost ? ` — ${esc(String(o.raw.cost))}` : ""}</p>`).join("") : `<p class="gap">${esc(str(d.raw.options_note) ?? "No costed options in this bundle.")}</p>`}
               </article>`;
@@ -416,7 +506,7 @@ function renderOpen(bundle: TripBundle): string {
     ${overs
       .map(
         (r) =>
-          `<article class="card"><h3>Overnight on ${esc(r.id)}</h3><p class="pill">open — never a chosen stop</p>${r.note ? `<p>${esc(r.note)}</p>` : ""}</article>`,
+          `<article class="card"><h3>Overnight on ${esc(r.id)}</h3><p class="whisper">open — never a chosen stop</p>${r.note ? `<p>${esc(r.note)}</p>` : ""}</article>`,
       )
       .join("")}
   </section>`;
@@ -425,13 +515,13 @@ function renderOpen(bundle: TripBundle): string {
 function renderFood(bundle: TripBundle): string {
   const items = foodItems(bundle);
   const meta = collection(bundle, "food");
-  const areas = isRecord(meta) && Array.isArray(meta.areas) ? meta.areas.map(String) : [];
-  const count = isRecord(meta) ? meta.engine_count : undefined;
+  const areas = isRecord(meta) && isRecord(meta.areas) ? Object.keys(meta.areas) : isRecord(meta) && Array.isArray(meta.areas) ? meta.areas.map(String) : [];
+  const always = isRecord(meta) ? str(meta.always_print) : undefined;
   return `<section>
-    <h1>Food · GF / DF</h1>
+    <h1>Food</h1>
     <p class="note">GF and DF are separate. Preference, not celiac. Missing tag does not hide a place. Unknown is not safe.</p>
-    ${count !== undefined ? `<p class="meta">Engine count: ${esc(String(count))}</p>` : ""}
-    ${areas.length ? `<p class="meta">Areas: ${areas.map((a) => `<span class="pill">${esc(a)}</span>`).join(" ")}</p>` : ""}
+    ${always ? `<p class="whisper">${esc(always)}</p>` : ""}
+    ${areas.length ? `<p class="whisper">${areas.map((a) => esc(a.replace(/_/g, " "))).join(" · ")}</p>` : ""}
     ${emptyOrMissing("food", bundle, "Food")}
     ${items.map((i) => itemCard(i, "food")).join("")}
   </section>`;
@@ -458,31 +548,36 @@ function renderMore(bundle: TripBundle): string {
   const a2hs = state.standalone
     ? `<p class="ok">Running as Home Screen app — not nagging.</p>`
     : `<ol class="a2hs">
-        <li>Safari: tap the Share button (square with arrow).</li>
-        <li>Scroll to <strong>Add to Home Screen</strong>.</li>
-        <li>Tap Add. Open from the home screen next time.</li>
+        <li>Safari: Share (square with arrow).</li>
+        <li>Add to Home Screen → Add.</li>
+        <li>Open from the home screen next time.</li>
       </ol>`;
   const live = state.live;
   const targets = bundleLiveTargets(bundle);
+  const gate = collection(bundle, "gates");
   return `<section>
-    <h1>Install &amp; live</h1>
-    <h2>Add to Home Screen</h2>
-    ${a2hs}
-    <h2>Save for offline</h2>
-    <p class="note">Saves the shell + bundle. Then turn on Airplane Mode and reopen to prove it.</p>
-    <button class="btn" data-action="save-offline" ${state.saveProgress !== null ? "disabled" : ""}>Save for offline</button>
-    ${state.saveProgress !== null ? `<p class="meta">Saving… ${Math.round(state.saveProgress * 100)}%</p>` : ""}
-    ${state.saveMessage ? `<p class="${state.saveMessage.startsWith("Saved") ? "ok" : "gap"}">${esc(state.saveMessage)}</p>` : ""}
-    <p class="meta">${esc(cacheAge(state.loadedAt))} · source ${esc(state.source)}</p>
-    <h2>Webcams &amp; Brainard gate</h2>
-    <p class="note">Display only. Failures stay failures — not “closed” and not “no color”.</p>
+    <h1>Install</h1>
+    <article class="card quiet-card">
+      <h2 class="inline-h">Add to Home Screen</h2>
+      ${a2hs}
+    </article>
+    <article class="card quiet-card">
+      <h2 class="inline-h">Save for offline</h2>
+      <p class="note">Caches the shell and bundle. Then Airplane Mode, reopen the Home Screen icon.</p>
+      <button class="btn" data-action="save-offline" ${state.saveProgress !== null ? "disabled" : ""}>Save for offline</button>
+      ${state.saveProgress !== null ? `<p class="whisper">Saving… ${Math.round(state.saveProgress * 100)}%</p>` : ""}
+      ${state.saveMessage ? `<p class="${state.saveMessage.startsWith("Saved") ? "ok" : "gap"}">${esc(state.saveMessage)}</p>` : ""}
+      <p class="whisper">${esc(cacheAge(state.loadedAt))} · ${esc(state.source)}</p>
+    </article>
+    <h2>Webcams &amp; gate</h2>
+    <p class="note">Display only. A failed fetch is not “closed” and not “no color”.</p>
     ${targets.length ? `<button class="btn" data-action="refresh-live" ${state.liveBusy ? "disabled" : ""}>Fetch live</button>` : `<p class="gap">No webcam or gate URLs in this bundle.</p>`}
     ${
-      isRecord(collection(bundle, "gates"))
-        ? `<article class="card"><h3>${esc(str((collection(bundle, "gates") as Record<string, unknown>).name) ?? "Gate")}</h3>
-           <p>last_seen ${esc(str((collection(bundle, "gates") as Record<string, unknown>).last_seen) ?? "unknown")}</p>
-           <p class="meta">table ${esc(str((collection(bundle, "gates") as Record<string, unknown>).last_seen_table) ?? "—")} · checked ${esc(str((collection(bundle, "gates") as Record<string, unknown>).checked) ?? "—")}</p>
-           ${str((collection(bundle, "gates") as Record<string, unknown>).note) ? `<p class="note">${esc(str((collection(bundle, "gates") as Record<string, unknown>).note)!)}</p>` : ""}
+      isRecord(gate)
+        ? `<article class="card quiet-card"><h3>${esc(str(gate.name) ?? "Brainard")}</h3>
+           <p class="lede">${esc(str(gate.last_seen) ?? "last_seen unknown")}</p>
+           <p class="whisper">checked ${esc(str(gate.checked) ?? "—")}</p>
+           ${str(gate.why) || str(gate.note) ? `<details class="more-facts"><summary>Details</summary><p>${esc(str(gate.why) ?? str(gate.note) ?? "")}</p></details>` : ""}
            </article>`
         : ""
     }
@@ -490,10 +585,10 @@ function renderMore(bundle: TripBundle): string {
       .map(
         (r) =>
           `<article class="card ${r.ok ? "" : "fail"}">
-            <h3>${esc(r.label)} <span class="pill">${esc(r.kind)}</span></h3>
-            <p>${r.ok ? `Fetched HTTP ${r.status ?? ""}` : esc(r.error ?? "failed")}</p>
-            <p class="meta">fetched-at ${esc(r.fetchedAt)}</p>
-            ${r.ok && r.kind === "webcam" ? `<img alt="" src="${esc(r.url)}">` : `<a href="${esc(r.url)}">${esc(r.url)}</a>`}
+            <h3>${esc(r.label)}</h3>
+            <p class="lede">${r.ok ? `Fetched HTTP ${r.status ?? ""}` : esc(r.error ?? "failed")}</p>
+            <p class="whisper">fetched-at ${esc(r.fetchedAt)}</p>
+            ${r.ok && r.kind === "webcam" ? `<img alt="" src="${esc(r.url)}">` : `<p class="whisper"><a href="${esc(r.url)}">${esc(r.url)}</a></p>`}
           </article>`,
       )
       .join("")}
@@ -510,10 +605,14 @@ function behaviourBlock(bundle: TripBundle): string {
     if (b.no_early_mornings_note) bits.push(String(b.no_early_mornings_note));
     if (b.gf_df_note) bits.push(String(b.gf_df_note));
     if (b.disagreeing_sources) bits.push(`Disagreeing sources: ${String(b.disagreeing_sources)}`);
+    if (isRecord(b.subjects) && isRecord(b.subjects.bighorn)) {
+      const detail = str(b.subjects.bighorn.detail);
+      if (detail) bits.push(detail);
+    }
   }
   if (isRecord(land) && land.bighorn_rut === false) bits.push("Bighorn are NOT in rut.");
   if (!bits.length) return "";
-  return `<h2>Behaviour / land</h2><ul class="facts">${bits.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  return `<details class="fold"><summary>Behaviour / land</summary><ul class="facts tight">${bits.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details>`;
 }
 
 function allMappable(bundle: TripBundle): Array<{ id: string; name: string; lat: number; lon: number; kind: string }> {
@@ -574,8 +673,8 @@ function renderDrive(bundle: TripBundle): string {
     ${state.extras
       .map(
         (e) =>
-          `<article class="card unverified"><h3>${esc(e.name)}</h3><p class="pill">UNVERIFIED</p><p class="meta">${esc(e.kind)}</p>
-           <a class="btn" href="${esc(mapsUrl(e.lat, e.lon, e.name))}">Open in Maps</a></article>`,
+          `<article class="card unverified"><h3>${esc(e.name)}</h3><p class="whisper">UNVERIFIED · ${esc(e.kind)}</p>
+           <a class="btn small" href="${esc(mapsUrl(e.lat, e.lon, e.name))}">Open in Maps</a></article>`,
       )
       .join("")}
   </section>`;
@@ -603,17 +702,19 @@ function shell(body: string): string {
     ["gaps", "Gaps"],
     ["more", "More"],
   ];
-  return `<header class="top">
+  return `<div class="frame">
+    <header class="top">
       <p class="brand">Colorado trip</p>
       <label class="toggle compact"><input type="checkbox" data-action="dogs-with-us" ${state.dogsWithUs ? "checked" : ""}> Dogs with us</label>
     </header>
-    <main id="main">${body}</main>
-    <nav class="tabbar">${nav
+    <nav class="tabbar" aria-label="Screens">${nav
       .map(
         ([id, label]) =>
           `<a class="${state.route === id ? "on" : ""}" href="#/${id}">${label}</a>`,
       )
-      .join("")}</nav>`;
+      .join("")}</nav>
+    <main id="main">${body}</main>
+  </div>`;
 }
 
 async function mountMap(bundle: TripBundle): Promise<void> {

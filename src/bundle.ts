@@ -152,6 +152,9 @@ export function collectionNote(bundle: TripBundle, kind: keyof typeof COLLECTION
 export function namedItems(v: unknown, fallbackPrefix: string): NamedItem[] {
   if (v === undefined) return [];
   return asArray(v).map((item, i) => {
+    if (typeof item === "string" && item.trim()) {
+      return { id: `${fallbackPrefix}-${i}`, name: item.trim(), raw: { value: item } };
+    }
     const rec = isRecord(item) ? item : { value: item };
     const name =
       str(rec.name) ??
@@ -159,6 +162,7 @@ export function namedItems(v: unknown, fallbackPrefix: string): NamedItem[] {
       str(rec.label) ??
       str(rec.trail) ??
       str(rec.place) ??
+      str(rec.value) ??
       `${fallbackPrefix} ${i + 1}`;
     const id = str(rec.id) ?? `${fallbackPrefix}-${i}`;
     return { id, name, raw: rec };
@@ -204,50 +208,73 @@ export function dogStatus(raw: Record<string, unknown>): DogStatus {
   return "unknown";
 }
 
-export function gfDf(raw: Record<string, unknown>): { gf: string; df: string } {
-  const gf = pick(raw, ["gf", "gluten_free", "gluten-free", "GF"]);
-  const df = pick(raw, ["df", "dairy_free", "dairy-free", "DF"]);
-  return { gf: formatDiet(gf, "GF"), df: formatDiet(df, "DF") };
+export type DietPrint = { gf: string; df: string; gfQuote?: string; dfQuote?: string };
+
+export function gfDf(raw: Record<string, unknown>): DietPrint {
+  const gf = formatDiet(pick(raw, ["gf", "gluten_free", "gluten-free", "GF"]), "GF");
+  const df = formatDiet(pick(raw, ["df", "dairy_free", "dairy-free", "DF"]), "DF");
+  return { gf: gf.line, df: df.line, gfQuote: gf.quote, dfQuote: df.quote };
 }
 
-function formatDiet(v: unknown, label: string): string {
-  if (v === undefined || v === null || v === "") return `${label}: unknown`;
-  if (typeof v === "boolean") return v ? `${label}: tagged` : `${label}: not tagged`;
+function nonUrl(v: string | undefined): string | undefined {
+  if (!v) return undefined;
+  if (/^https?:\/\//i.test(v)) return undefined;
+  return v;
+}
+
+function formatDiet(v: unknown, label: string): { line: string; quote?: string } {
+  if (v === undefined || v === null || v === "") return { line: `${label}: unknown` };
+  if (typeof v === "boolean") return { line: v ? `${label}: tagged` : `${label}: not tagged` };
   if (isRecord(v)) {
-    const status = str(v.status) ?? str(v.value) ?? str(v.level) ?? str(v.tag);
-    const source = str(v.source) ?? str(v.from) ?? str(v.kind);
-    const bits = [`${label}: ${status ?? "unknown"}`];
-    if (source) bits.push(`(${source})`);
-    return bits.join(" ");
+    const status = str(v.status) ?? str(v.value) ?? str(v.level) ?? str(v.tag) ?? "unknown";
+    const confidence = nonUrl(str(v.confidence));
+    const sourceLabel = nonUrl(str(v.source) ?? str(v.from) ?? str(v.kind));
+    const paren = confidence ?? sourceLabel;
+    const quote = str(v.quote);
+    return { line: paren ? `${label}: ${status} (${paren})` : `${label}: ${status}`, quote };
   }
-  return `${label}: ${String(v)}`;
+  return { line: `${label}: ${String(v)}` };
 }
 
 export function milesLines(raw: Record<string, unknown>): string[] {
   const lines: string[] = [];
+  if (isRecord(raw.alltrails)) {
+    const rt = num(raw.alltrails.round_trip_mi);
+    const m =
+      rt !== undefined
+        ? `${rt} mi round trip`
+        : str(raw.alltrails.miles) ?? str(raw.alltrails.length) ?? str(raw.alltrails.distance);
+    if (m) lines.push(`AllTrails: ${m}`);
+  }
+  if (isRecord(raw.agency)) {
+    const ow = num(raw.agency.one_way_mi);
+    const m =
+      ow !== undefined
+        ? `${ow} mi one way`
+        : str(raw.agency.miles) ?? str(raw.agency.length) ?? str(raw.agency.distance);
+    if (m) lines.push(`agency: ${m}`);
+  }
+  if (isRecord(raw.nps)) {
+    const m = str(raw.nps.miles) ?? str(raw.nps.length) ?? str(raw.nps.distance);
+    if (m) lines.push(`NPS: ${m}`);
+  }
   const pairs: Array<[string, string[]]> = [
     ["AllTrails", ["miles_alltrails", "alltrails_miles", "length_alltrails", "alltrails_length"]],
     ["agency / NPS", ["miles_nps", "nps_miles", "miles_agency", "agency_miles", "length_nps", "length_agency"]],
   ];
+  const already = (label: string) => lines.some((l) => l.toLowerCase().startsWith(label.toLowerCase()));
   for (const [label, keys] of pairs) {
-    if (label === "AllTrails" && isRecord(raw.alltrails)) {
-      const m = str(raw.alltrails.miles) ?? str(raw.alltrails.length) ?? str(raw.alltrails.distance);
-      if (m) lines.push(`AllTrails: ${m}`);
-    }
-    if (label.startsWith("agency") && isRecord(raw.nps)) {
-      const m = str(raw.nps.miles) ?? str(raw.nps.length) ?? str(raw.nps.distance);
-      if (m) lines.push(`NPS: ${m}`);
-    }
-    if (label.startsWith("agency") && isRecord(raw.agency)) {
-      const m = str(raw.agency.miles) ?? str(raw.agency.length) ?? str(raw.agency.distance);
-      if (m) lines.push(`agency: ${m}`);
-    }
+    if (already(label.split(" ")[0] ?? label)) continue;
     const v = pick(raw, keys);
-    if (v !== undefined && v !== null && v !== "") lines.push(`${label}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`);
+    if (v !== undefined && v !== null && v !== "" && !isRecord(v) && !Array.isArray(v)) {
+      lines.push(`${label}: ${String(v)}`);
+    }
   }
-  // generic length fields printed with their key so we never average
+  if (raw.each_way_mi !== undefined && raw.each_way_mi !== null && raw.each_way_mi !== "") {
+    lines.push(`each way: ${String(raw.each_way_mi)} mi (derived)`);
+  }
   for (const k of ["miles", "length", "distance", "distance_mi", "length_mi", "miles_display", "length_display"]) {
-    if (k in raw && raw[k] !== undefined && raw[k] !== null && raw[k] !== "") {
+    if (k in raw && raw[k] !== undefined && raw[k] !== null && raw[k] !== "" && !isRecord(raw[k])) {
       lines.push(`${k}: ${String(raw[k])}`);
     }
   }
@@ -300,7 +327,12 @@ export function permitOf(raw: Record<string, unknown>): string | undefined {
 }
 
 export function lengthNumber(raw: Record<string, unknown>): number | undefined {
+  const nestedAt = isRecord(raw.alltrails) ? num(raw.alltrails.round_trip_mi) : undefined;
+  const nestedAg = isRecord(raw.agency) ? num(raw.agency.one_way_mi) : undefined;
   return (
+    nestedAt ??
+    nestedAg ??
+    num(raw.each_way_mi) ??
     num(raw.miles) ??
     num(raw.length) ??
     num(raw.distance) ??
@@ -338,20 +370,45 @@ function guessKind(url: string): "webcam" | "gate" {
   return /gate/i.test(url) ? "gate" : "webcam";
 }
 
+function foliageText(val: unknown, key: string): string {
+  if (val === undefined || val === null) return "unknown";
+  if (typeof val === "string" || typeof val === "number") return String(val);
+  if (Array.isArray(val)) return val.map((x) => (typeof x === "string" ? x : JSON.stringify(x))).join(" · ");
+  if (!isRecord(val)) return String(val);
+  if (key === "model" || key === "FORECAST" || key === "forecast") {
+    const bits = [str(val.status), str(val.rule), str(val.summary), str(val.text)].filter(Boolean);
+    if (Array.isArray(val.bands)) {
+      const bands = val.bands
+        .filter(isRecord)
+        .map((b) => [str(b.place), str(b.modelled_peak) ?? str(b.peak)].filter(Boolean).join(" "))
+        .filter(Boolean);
+      if (bands.length) bits.push(bands.join("; "));
+    }
+    if (bits.length) return bits.join(" — ");
+  }
+  if (key === "county_forecast" || key === "county") {
+    return Object.entries(val)
+      .filter(([k]) => !k.startsWith("_"))
+      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.map(String).join("–") : String(v)}`)
+      .join(" · ");
+  }
+  return str(val.summary) ?? str(val.text) ?? str(val.note) ?? str(val.status) ?? JSON.stringify(val);
+}
+
 export function foliageBlocks(v: unknown): Array<{ kind: string; text: string; as_of?: string }> {
   if (v === undefined) return [];
   if (typeof v === "string") return [{ kind: "unknown", text: v }];
   if (Array.isArray(v)) return v.flatMap((x) => foliageBlocks(x));
   if (!isRecord(v)) return [{ kind: "unknown", text: String(v) }];
   const out: Array<{ kind: string; text: string; as_of?: string }> = [];
-  for (const key of ["forecast", "FORECAST", "observation", "OBSERVATION", "observed", "model", "county"]) {
+  for (const key of ["forecast", "FORECAST", "observation", "OBSERVATION", "observed", "model", "county", "county_forecast"]) {
     if (key in v) {
       const kind = /obs/i.test(key) ? "OBSERVATION" : /forecast|model|county/i.test(key) ? "FORECAST" : key;
       const val = v[key];
       out.push({
         kind,
-        text: isRecord(val) || Array.isArray(val) ? JSON.stringify(val) : String(val),
-        as_of: str((isRecord(val) ? val.as_of : undefined) ?? v.as_of ?? v.asOf),
+        text: foliageText(val, key),
+        as_of: str((isRecord(val) ? val.fetched ?? val.as_of : undefined) ?? v.fetched ?? v.as_of ?? v.asOf),
       });
     }
   }

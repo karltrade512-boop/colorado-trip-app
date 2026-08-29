@@ -25,6 +25,8 @@ import {
   foodAreaServes,
   foodDirectories,
   peekMilesLines,
+  bundleImage,
+  placeAbout,
   placeCardSections,
   gatewayFallback,
   gfDf,
@@ -57,6 +59,7 @@ import {
 import { idbGet, idbSet, type CachedBundle } from "./db";
 import { haversineKm, isStandalone, mapsSearchUrl, mapsUrl } from "./geo";
 import { bundleLiveTargets, fetchLive, fetchUnverifiedExtras } from "./live";
+import { hydratePlacePhotos } from "./wiki";
 
 export type RouteId =
   | "today"
@@ -391,7 +394,7 @@ function constraintPills(item: ReturnType<typeof namedItems>[number], isFood: bo
   return pills.length ? `<p class="pills">${pills.join("")}</p>` : "";
 }
 
-function foldSection(title: string, lines: string[]): string {
+function foldSection(title: string, lines: string[], open = false): string {
   const body = lines
     .map((line) => {
       const m = /^(Agency page)\s+(https?:\/\/\S+)$/.exec(line);
@@ -401,12 +404,30 @@ function foldSection(title: string, lines: string[]): string {
       return `<p>${esc(line)}</p>`;
     })
     .join("");
-  return `<details class="card-fold"><summary>${esc(title)}</summary>${body}</details>`;
+  return `<details class="card-fold"${open ? " open" : ""}><summary>${esc(title)}</summary>${body}</details>`;
 }
 
 function cardFolds(item: ReturnType<typeof namedItems>[number], bundle: TripBundle): string {
   const s = placeCardSections(item, bundle);
-  return `${foldSection("Why / why not", s.why)}${foldSection("Look out for", s.lookOut)}${foldSection("Around this", s.around)}${foldSection("Details", s.details)}`;
+  const about = s.about.length ? s.about : placeAbout(item);
+  return `${foldSection("About", about, true)}${foldSection("Why / why not", s.why)}${foldSection("Look out for", s.lookOut)}${foldSection("Around this", s.around)}${foldSection("Details", s.details)}`;
+}
+
+function photoPeek(item: ReturnType<typeof namedItems>[number]): string {
+  const bundled = bundleImage(item.raw);
+  if (bundled) {
+    return `<figure class="place-photo">
+      <img src="${esc(bundled.url)}" alt="${esc(item.name)}" />
+      <figcaption>${esc(bundled.label)}</figcaption>
+    </figure>`;
+  }
+  const tryWiki = Boolean(str(item.raw.trailhead) || isRecord(item.raw.alltrails) || item.id.startsWith("photo-"));
+  if (!tryWiki) {
+    return `<figure class="place-photo none"><p class="whisper">No photo in this bundle</p></figure>`;
+  }
+  return `<figure class="place-photo waiting" data-photo-name="${esc(item.name)}" data-photo-area="${esc(areaOf(item.raw) ?? "")}">
+    <p class="whisper">No photo in this bundle</p>
+  </figure>`;
 }
 
 function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""): string {
@@ -425,6 +446,7 @@ function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""):
       })();
 
   return `<article class="card sheet ${bannedFold ? "folded-dogs" : ""}" data-id="${esc(item.id)}">
+    ${photoPeek(item)}
     <h3>${esc(item.name)}</h3>
     ${constraintPills(item, isFood)}
     ${peekFact}
@@ -1130,6 +1152,7 @@ function pinSheet(pin: MapPin | undefined): string {
       : `${foldSection("Why / why not", pin.facts.length ? pin.facts : ["No why-go text in this bundle."])}${foldSection("Look out for", ["Look out for: not in this bundle."])}${foldSection("Around this", ["Around this: not in this bundle."])}${foldSection("Details", ["Details: not in this bundle."])}`;
   const chip = unverified ? `<p class="pills"><span class="pill">UNVERIFIED</span></p>` : "";
   return `<div id="pin-sheet" class="pin-sheet"><article class="card">
+    ${item ? photoPeek(item) : ""}
     <h3>${esc(pin.name)}</h3>
     ${chip}
     <p class="whisper">${esc(pin.facts[0] ?? "")}</p>
@@ -1409,6 +1432,7 @@ function renderPhotos(bundle: TripBundle): string {
       const item = { id: `photo-${name}`, name, raw };
       const firstPlace = s?.places[0];
       return `<article class="card">
+        ${photoPeek(item)}
         <h2 class="inline-h">${esc(name)}</h2>
         ${peek ? `<p class="lede">${esc(peek)}</p>` : ""}
         ${firstPlace ? actionRow({ maps: mapsSearchUrl(firstPlace) }) : ""}
@@ -1662,6 +1686,7 @@ export function paint(): void {
     void mountColorMap(state.bundle);
   }
   afterPaint();
+  if (!printing) void hydratePlacePhotos();
 }
 
 function bind(): void {

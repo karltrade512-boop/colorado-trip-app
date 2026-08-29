@@ -292,11 +292,80 @@ export function foodAreaServes(bundle: TripBundle, placeArea: string | undefined
 }
 
 export type PlaceCardSections = {
+  about: string[];
   why: string[];
   lookOut: string[];
   around: string[];
   details: string[];
 };
+
+export function bundleImage(raw: Record<string, unknown>): { url: string; label: string } | undefined {
+  const asUrl = (v: unknown): string | undefined => {
+    if (typeof v === "string" && /^https?:\/\//i.test(v)) {
+      if (/\.(jpe?g|png|webp|gif)(\?|#|$)/i.test(v) || /\/wikipedia\/commons\//i.test(v)) return v;
+    }
+    if (isRecord(v)) return asUrl(v.url) ?? asUrl(v.href) ?? asUrl(v.src) ?? asUrl(v.image);
+    return undefined;
+  };
+  for (const k of ["image", "photo", "thumbnail", "img", "image_url", "photo_url"]) {
+    const url = asUrl(raw[k]);
+    if (!url) continue;
+    const rec = isRecord(raw[k]) ? raw[k] : undefined;
+    const label = rec ? str(rec.source) ?? str(rec.credit) ?? str(rec.label) ?? k : k;
+    return { url, label };
+  }
+  return undefined;
+}
+
+export function wikiTitleCandidates(name: string, area?: string): string[] {
+  const titles: string[] = [];
+  const push = (t: string) => {
+    const s = t.replace(/\s+/g, " ").trim();
+    if (s && !titles.includes(s)) titles.push(s);
+  };
+  const bare = name
+    .replace(/\s*\([^)]*\)\s*/g, " ")
+    .replace(/\s*\/\s*.+$/, "")
+    .replace(/\s*\+\s*.+$/, "")
+    .trim();
+  push(name);
+  push(bare);
+  push(`${bare} (Colorado)`);
+  push(`${bare} Colorado`);
+  if (area && /rmnp|rocky mountain|wild basin|glacier|bear lake|longs/i.test(area)) {
+    push(`${bare} (Rocky Mountain National Park)`);
+    push(`${bare}, Rocky Mountain National Park`);
+  }
+  if (area && /brainard|indian peaks/i.test(area)) {
+    push(`${bare} (Indian Peaks)`);
+    push(`${bare} Brainard`);
+  }
+  if (/hessie/i.test(name)) push("Lost Lake (Colorado)");
+  if (/the loch/i.test(name)) push("The Loch (Rocky Mountain National Park)");
+  return titles;
+}
+
+export function placeAbout(item: NamedItem): string[] {
+  const raw = item.raw;
+  const at = isRecord(raw.alltrails) ? raw.alltrails : undefined;
+  const stats: string[] = [];
+  const prose: string[] = [];
+  pushLine(stats, areaOf(raw));
+  pushLine(stats, str(raw.trailhead) ? `trailhead ${str(raw.trailhead)}` : undefined);
+  if (at && str(at.difficulty)) pushLine(stats, `difficulty ${str(at.difficulty)}`);
+  if (at && num(at.duration_min) !== undefined) pushLine(stats, `AllTrails duration ${num(at.duration_min)} min`);
+  for (const g of gainLines(raw)) pushLine(stats, g);
+  if (at && str(at.route_type)) pushLine(stats, `route ${str(at.route_type)}`);
+  if (at && num(at.rating) !== undefined) pushLine(stats, `AllTrails rating ${num(at.rating)}`);
+  pushLine(stats, str(raw.kind));
+  pushLine(stats, str(raw.address));
+  pushLine(prose, str(raw.note));
+  pushLine(prose, str(raw.review_summary));
+  pushLine(prose, str(raw.wildlife));
+  pushLine(prose, str(raw.disagreement));
+  if (!prose.length) pushLine(prose, "No writeup in this bundle.");
+  return [...stats, ...prose];
+}
 
 function pushLine(lines: string[], v: string | undefined | null): void {
   const s = v != null ? String(v).trim() : "";
@@ -409,6 +478,7 @@ export function placeCardSections(item: NamedItem, bundle: TripBundle): PlaceCar
 
   const around = aroundThisNames(item, bundle);
   return {
+    about: placeAbout(item),
     why: why.length ? why : ["No why-go text in this bundle."],
     lookOut: lookOut.length ? lookOut : ["Look out for: not in this bundle."],
     around: around.length ? around : ["Around this: not in this bundle."],

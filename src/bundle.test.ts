@@ -31,6 +31,9 @@ import {
   permitPrint,
   sheetMilesLines,
   placeCardSections,
+  placeAbout,
+  wikiTitleCandidates,
+  bundleImage,
 } from "./bundle.ts";
 import { osmExtraExcluded } from "./live.ts";
 
@@ -309,6 +312,23 @@ describe("trip-bundle", () => {
     assert.equal(sec.why.includes("No why-go text in this bundle."), false);
     assert.ok(sec.around.includes("Ouzel Lake"));
     assert.ok(sec.details.includes("no pin in this bundle"));
+    const about = placeAbout(hike);
+    assert.ok(about.some((l) => /Wild Basin/.test(l)));
+    assert.ok(about.some((l) => /beyond|stated range/i.test(l)));
+    assert.ok(about.some((l) => /13\.6 vs NPS 12\.0/.test(l)));
+  });
+
+  it("builds Wikipedia title candidates without a network fetch", () => {
+    const isabelle = wikiTitleCandidates("Lake Isabelle", "Indian Peaks / Brainard");
+    assert.ok(isabelle.includes("Lake Isabelle"));
+    assert.ok(isabelle.includes("Lake Isabelle (Colorado)"));
+    const bluebird = wikiTitleCandidates("Bluebird Lake", "RMNP / Wild Basin");
+    assert.ok(bluebird.includes("Bluebird Lake (Colorado)"));
+    assert.ok(bluebird.includes("Bluebird Lake (Rocky Mountain National Park)"));
+    const loch = wikiTitleCandidates("The Loch", "RMNP");
+    assert.ok(loch.includes("The Loch (Rocky Mountain National Park)"));
+    assert.equal(bundleImage({}), undefined);
+    assert.equal(bundleImage({ image: "https://example.com/x.jpg", photo: null })?.url, "https://example.com/x.jpg");
   });
 
   it("prints Lost Lake why from wildlife or review_summary", () => {

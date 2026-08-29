@@ -362,6 +362,30 @@ main { padding: 4px var(--pad-r) 40px var(--pad); }
 }
 .card-fold[open] summary::after { content: "▾"; }
 .card-fold p { font-size: 0.95rem; margin: 0.25rem 0; }
+.place-photo {
+  margin: 0 0 10px;
+  background: color-mix(in srgb, var(--line) 35%, var(--card));
+  border-radius: 12px;
+  overflow: hidden;
+}
+.place-photo img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+.place-photo figcaption,
+.place-photo.none .whisper,
+.place-photo.waiting .whisper {
+  display: block;
+  padding: 6px 10px 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.place-photo.none,
+.place-photo.waiting {
+  min-height: 64px;
+}
 .fold summary::-webkit-details-marker,
 .more-facts summary::-webkit-details-marker,
 .quote summary::-webkit-details-marker,

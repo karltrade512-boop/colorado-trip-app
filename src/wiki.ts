@@ -11,7 +11,7 @@ import {
   type WebcamHint,
 } from "./bundle";
 
-const PHOTO_CACHE = "colorado-place-photos-v4";
+const PHOTO_CACHE = "colorado-place-photos-v5";
 const memory = new Map<string, PlacePhoto>();
 
 export type PlacePhoto =
@@ -133,7 +133,15 @@ async function firstFallCommons(name: string, area?: string): Promise<PlacePhoto
         const { url, input } = fallInputFromCommons(page);
         if (!url) continue;
         const mime = page.imageinfo?.[0]?.mime;
-        if (!commonsCandidateOk({ mime, title: page.title ?? input.title, description: input.description, placeName: name })) {
+        if (
+          !commonsCandidateOk({
+            mime,
+            title: page.title ?? input.title,
+            description: input.description,
+            categories: input.categories,
+            placeName: name,
+          })
+        ) {
           continue;
         }
         const verdict = judgeFallPhoto(input);

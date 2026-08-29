@@ -421,6 +421,33 @@ describe("trip-bundle", () => {
       }),
       true,
     );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "WHCPA Pioneer Museum in Long Lake, MN",
+        description: "Picture taken from behind includes the Carriage House.",
+        placeName: "Long Lake",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "Entrance to Mitchell Lake - panoramio.jpg",
+        description: "Entrance to Mitchell Lake",
+        placeName: "Mitchell Lake",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "Blue Lake (Huerfano County, Colorado)",
+        description: "San Isabel National Forest near Cuchara",
+        placeName: "Blue Lake",
+      }),
+      false,
+    );
   });
 
   it("prints Lost Lake why from wildlife or review_summary", () => {

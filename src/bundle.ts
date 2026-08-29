@@ -453,20 +453,31 @@ export function photoMentionsPlace(placeName: string, hay: string): boolean {
   return strong.every((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(hay));
 }
 
+const TRIP_AREA =
+  /\b(brainard|indian peaks|rocky mountain|rmnp|wild basin|nederland|front range|roosevelt national|estes|allenspark|hessie|longs peak|glacier gorge|bear lake|pawnee|arapaho|jean lunning)\b/i;
+const ELSEWHERE =
+  /\b(minnesota|ontario|texas|oregon|california|florida|illinois|idaho|wisconsin|michigan|new zealand|croatia|san antonio|hennepin|huerfano|cuchara|audubon center|pioneer museum|umpqua|crater lake|mount cook|aoraki|kahurangi|humboldt)\b/i;
+const GENERIC_LAKE = /^(blue lake|long lake|mitchell lake|diamond lake|columbine lake)$/i;
+
 export function commonsCandidateOk(input: {
   mime?: string;
   title?: string;
   description?: string;
+  categories?: string;
   placeName: string;
 }): boolean {
   const mime = (input.mime ?? "").toLowerCase();
   const title = input.title ?? "";
   const description = input.description ?? "";
+  const hay = `${title} ${description} ${input.categories ?? ""}`;
   if (!mime.startsWith("image/") || mime.includes("svg")) return false;
   if (/\.pdf$/i.test(title) || /\bpdf\b/i.test(title)) return false;
-  const hay = `${title} ${description}`;
-  if (/\b(trail[- ]map|just off the map|ecoregion|master plan|catalogue|catalog|HAER)\b/i.test(hay)) return false;
-  return photoMentionsPlace(input.placeName, hay);
+  if (/\b(trail[- ]map|just off the map|ecoregion|master plan|catalogue|catalog|HAER|atlas|DPLA)\b/i.test(hay)) return false;
+  if (ELSEWHERE.test(hay) && !TRIP_AREA.test(hay)) return false;
+  if (!photoMentionsPlace(input.placeName, hay)) return false;
+  const bare = input.placeName.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+  if (GENERIC_LAKE.test(bare)) return TRIP_AREA.test(hay);
+  return TRIP_AREA.test(hay) || /\bcolorado\b/i.test(hay);
 }
 
 export function wikiTitleCandidates(name: string, area?: string): string[] {

@@ -22,8 +22,10 @@ import {
   foliageRanking,
   foliageSources,
   foliageWebcams,
+  foodAreaServes,
   foodDirectories,
-  gainLines,
+  peekMilesLines,
+  placeCardSections,
   gatewayFallback,
   gfDf,
   isRecord,
@@ -37,15 +39,12 @@ import {
   missingInventory,
   namedItems,
   nextOrToday,
-  num,
   oneLineLight,
   permitOf,
-  permitPrint,
   pickDay,
   defaultCabinFromDay,
   placeById,
   placesList,
-  rankGroup,
   runsList,
   servesOf,
   sheetMilesLines,
@@ -288,13 +287,7 @@ function dogLabel(raw: Record<string, unknown>): string {
 }
 
 function foodServesBases(bundle: TripBundle, placeArea: string | undefined): string[] {
-  if (!placeArea) return [];
-  const food = collection(bundle, "food");
-  if (isRecord(food) && isRecord(food.areas)) {
-    const block = food.areas[placeArea];
-    if (isRecord(block) && Array.isArray(block.serves)) return block.serves.map(String);
-  }
-  return [placeArea];
+  return foodAreaServes(bundle, placeArea);
 }
 
 function foodForDay(bundle: TripBundle, day: Day | undefined): ReturnType<typeof namedItems> {
@@ -398,107 +391,45 @@ function constraintPills(item: ReturnType<typeof namedItems>[number], isFood: bo
   return pills.length ? `<p class="pills">${pills.join("")}</p>` : "";
 }
 
-function detailsBlock(rows: Array<[string, string | undefined | null]>, extra = ""): string {
-  const kept = rows.filter(([, v]) => v != null && String(v).trim());
-  if (!kept.length && !extra) return "";
-  return `<details class="more-facts"><summary>More</summary>
-    ${kept.map(([k, v]) => `<p><span class="k">${esc(k)}</span> ${esc(String(v))}</p>`).join("")}
-    ${extra}
-  </details>`;
+function foldSection(title: string, lines: string[]): string {
+  const body = lines
+    .map((line) => {
+      const m = /^(Agency page)\s+(https?:\/\/\S+)$/.exec(line);
+      if (m) {
+        return `<p><a href="${esc(m[2])}" target="_blank" rel="noopener">${esc(m[1])}</a></p>`;
+      }
+      return `<p>${esc(line)}</p>`;
+    })
+    .join("");
+  return `<details class="card-fold"><summary>${esc(title)}</summary>${body}</details>`;
 }
 
-function cabinChips(raw: Record<string, unknown>): string {
-  const bundle = state.bundle;
-  const ids = servesOf(raw);
-  if (!ids.length) return "";
-  return `<p class="chips">${ids
-    .map((id) => {
-      const p = bundle ? placeById(bundle, id) : undefined;
-      return `<span class="chip">${esc(p?.name ?? id)}</span>`;
-    })
-    .join("")}</p>`;
+function cardFolds(item: ReturnType<typeof namedItems>[number], bundle: TripBundle): string {
+  const s = placeCardSections(item, bundle);
+  return `${foldSection("Why / why not", s.why)}${foldSection("Look out for", s.lookOut)}${foldSection("Around this", s.around)}${foldSection("Details", s.details)}`;
 }
 
 function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""): string {
   const dog = dogStatus(item.raw);
   const bannedFold = state.dogsWithUs && dog === "banned";
-  const early = earlyCost(item.raw);
-  const low = rankGroup(item.raw) === "low";
   const isFood = extraClass === "food";
-
-  if (isFood) {
-    const diet = gfDf(item.raw);
-    const quotes: string[] = [];
-    if (diet.gfQuote) quotes.push(`GF: “${diet.gfQuote}”`);
-    if (diet.dfQuote) quotes.push(`DF: “${diet.dfQuote}”`);
-    const addr = str(item.raw.address);
-    const sources = [diet.gfSource, diet.dfSource].filter((u, i, a) => u && a.indexOf(u) === i) as string[];
-    const always = state.bundle
-      ? str((isRecord(collection(state.bundle, "food")) ? (collection(state.bundle, "food") as Record<string, unknown>).always_print : undefined))
-      : undefined;
-    const sourceHtml = sources.length
-      ? sources.map((u) => `<p><a href="${esc(u)}" target="_blank" rel="noopener">Source</a></p>`).join("")
-      : "";
-    return `<article class="card sheet ${bannedFold ? "folded-dogs" : ""}" data-id="${esc(item.id)}">
-      <h3>${esc(item.name)}</h3>
-      ${constraintPills(item, true)}
-      <p class="whisper">${esc(str(item.raw.kind) ?? "")}${areaOf(item.raw) ? ` · ${esc((areaOf(item.raw) ?? "").replace(/_/g, " "))}` : ""}</p>
-      ${actionRow({ maps: mapsHrefForItem(item) })}
-      ${detailsBlock(
-        [
-          ["Address", addr],
-          ["Note", str(item.raw.note)],
-        ],
-        `${quotes.map((q) => `<p>${esc(q)}</p>`).join("")}${sourceHtml}${always ? `<p class="whisper">${esc(always)}</p>` : ""}${bannedFold ? `<p class="whisper">Not with the dogs — folded, not removed.</p>` : ""}`,
-      )}
-    </article>`;
-  }
-
-  const miles = sheetMilesLines(item.raw);
-  const gains = gainLines(item.raw);
+  const bundle = state.bundle;
+  const folds = bundle ? cardFolds(item, bundle) : "";
   const at = isRecord(item.raw.alltrails) ? item.raw.alltrails : undefined;
-  const agency = isRecord(item.raw.agency) ? item.raw.agency : undefined;
   const atUrl = at ? str(at.url) : undefined;
-  const agencyUrl = agency ? str(agency.url) : undefined;
-  const extras: string[] = [];
-  if (at) {
-    const rating = num(at.rating);
-    if (str(at.difficulty)) extras.push(`<p><span class="k">Difficulty</span> ${esc(str(at.difficulty)!)}</p>`);
-    if (num(at.duration_min) !== undefined) extras.push(`<p><span class="k">Duration</span> AllTrails ${esc(String(num(at.duration_min)))} min</p>`);
-    if (str(at.route_type)) extras.push(`<p><span class="k">Route</span> ${esc(str(at.route_type)!)}</p>`);
-    if (rating !== undefined) extras.push(`<p><span class="k">Rating</span> AllTrails rating ${esc(String(rating))}</p>`);
-  }
-  if (gains.length) extras.push(gains.map((g) => `<p>${esc(g)}</p>`).join(""));
-  if (item.raw.osm_routed_each_way_mi !== undefined && item.raw.osm_routed_each_way_mi !== null && item.raw.osm_routed_each_way_mi !== "") {
-    extras.push(`<p><span class="k">OSM routed</span> ${esc(String(item.raw.osm_routed_each_way_mi))} mi each way (third measure, not averaged)</p>`);
-  }
-  if (agencyUrl) extras.push(`<p><a href="${esc(agencyUrl)}" target="_blank" rel="noopener">Agency page</a></p>`);
-  if (agency && str(agency.note)) extras.push(`<p><span class="k">Agency note</span> ${esc(str(agency.note)!)}</p>`);
-  if (early) extras.push(`<p class="whisper">Early — sorts last (sort key, not hidden).</p>`);
-  if (low) extras.push(`<p class="whisper">Low-ranked — still here.</p>`);
-  if (bannedFold) extras.push(`<p class="whisper">Not with the dogs — folded, not removed.</p>`);
+  const peekFact = isFood
+    ? `<p class="whisper">${esc(str(item.raw.kind) ?? "")}${areaOf(item.raw) ? ` · ${esc((areaOf(item.raw) ?? "").replace(/_/g, " "))}` : ""}</p>`
+    : (() => {
+        const miles = peekMilesLines(item.raw);
+        return miles.length ? `<p class="lede">${miles.map((m) => `<span>${esc(m)}</span>`).join("<br>")}</p>` : "";
+      })();
 
   return `<article class="card sheet ${bannedFold ? "folded-dogs" : ""}" data-id="${esc(item.id)}">
-    <div class="card-head">
-      <h3>${esc(item.name)}</h3>
-    </div>
-    ${constraintPills(item, false)}
-    ${miles.length ? `<p class="lede">${miles.map((m) => `<span>${esc(m)}</span>`).join("<br>")}</p>` : ""}
-    ${cabinChips(item.raw)}
-    ${actionRow({ maps: mapsHrefForItem(item), alltrails: atUrl })}
-    ${detailsBlock(
-      [
-        ["Trailhead", str(item.raw.trailhead)],
-        ["Disagreement", str(item.raw.disagreement)],
-        ["Access", str(item.raw.access_risk)],
-        ["Permit", permitPrint(item.raw)],
-        ["Note", str(item.raw.note)],
-        ["Review", str(item.raw.review_summary)],
-        ["Wildlife", str(item.raw.wildlife)],
-        ["Correction", str(item.raw.correction)],
-      ],
-      extras.join(""),
-    )}
+    <h3>${esc(item.name)}</h3>
+    ${constraintPills(item, isFood)}
+    ${peekFact}
+    ${actionRow({ maps: mapsHrefForItem(item), alltrails: isFood ? undefined : atUrl })}
+    ${folds}
   </article>`;
 }
 
@@ -1199,12 +1130,35 @@ function layerChips(): string {
     <p class="whisper">Toggles hide pins. They do not delete records. Not a ranking.</p>`;
 }
 
+function itemForPin(bundle: TripBundle, pin: MapPin): ReturnType<typeof namedItems>[number] | null {
+  const idMatch = /^(?:around|cabin|color)-(.+)$/.exec(pin.id);
+  if (idMatch) {
+    const p = placeById(bundle, idMatch[1]);
+    if (p) return { id: p.id ?? idMatch[1], name: p.name ?? idMatch[1], raw: p as Record<string, unknown> };
+  }
+  const bare = pin.id.replace(/^(photo|food)-/, "");
+  return (
+    [...menuItems(bundle), ...foodItems(bundle)].find((i) => i.id === bare || i.name === pin.name) ?? null
+  );
+}
+
 function pinSheet(pin: MapPin | undefined): string {
   if (!pin) return `<div id="pin-sheet" class="pin-sheet"><p class="whisper">Tap a pin for name and a few facts. Map stays visible.</p></div>`;
+  const bundle = state.bundle;
+  const unverified = pin.facts.some((f) => /UNVERIFIED/i.test(f));
+  const item = bundle ? itemForPin(bundle, pin) : null;
+  const folds = unverified
+    ? `${foldSection("Why / why not", ["UNVERIFIED OSM extra."])}${foldSection("Look out for", ["Look out for: not in this bundle."])}${foldSection("Around this", ["Around this: not in this bundle."])}${foldSection("Details", pin.facts.length ? pin.facts : ["Details: not in this bundle."])}`
+    : item && bundle
+      ? cardFolds(item, bundle)
+      : `${foldSection("Why / why not", pin.facts.length ? pin.facts : ["No why-go text in this bundle."])}${foldSection("Look out for", ["Look out for: not in this bundle."])}${foldSection("Around this", ["Around this: not in this bundle."])}${foldSection("Details", ["Details: not in this bundle."])}`;
+  const chip = unverified ? `<p class="pills"><span class="pill">UNVERIFIED</span></p>` : "";
   return `<div id="pin-sheet" class="pin-sheet"><article class="card">
     <h3>${esc(pin.name)}</h3>
-    ${pin.facts.slice(0, 3).map((f) => `<p>${esc(f)}</p>`).join("")}
+    ${chip}
+    <p class="whisper">${esc(pin.facts[0] ?? "")}</p>
     ${actionRow({ maps: pin.mapsHref, alltrails: pin.alltrailsHref })}
+    ${folds}
   </article></div>`;
 }
 
@@ -1466,33 +1420,24 @@ function renderPhotos(bundle: TripBundle): string {
   const subjectCards = subjects
     .map((name) => {
       const s = behaviourSubject(bundle, name);
-      const places = s?.places ?? [];
-      const placesHtml =
-        places.length === 0
-          ? `<p class="gap">${esc(`GAP: no named places for ${name} in this bundle. Empty list is not “nothing here”.`)}</p>`
-          : `<ul class="facts">${places
-              .map(
-                (place) =>
-                  `<li>
-                    <strong>${esc(place)}</strong>
-                    <span class="whisper"> · no pin in this bundle</span>
-                    <p><a class="btn small" href="${esc(mapsSearchUrl(place))}">Open in Maps (name search)</a></p>
-                  </li>`,
-              )
-              .join("")}</ul>
-            <p class="whisper">Meadow names without coordinates stay names. Do not invent photo-op pins.</p>`;
-      const extra =
+      const peek =
         name === "bighorn"
-          ? `<p class="lede">${esc(s?.detail?.match(/NOT in rut/i)?.[0] ?? "NOT in rut")}</p>`
-          : "";
+          ? s?.detail?.match(/NOT in rut/i)?.[0] ?? "NOT in rut"
+          : s?.action ?? "";
+      const raw: Record<string, unknown> = {
+        note: s?.detail,
+        wildlife: s?.restriction,
+        area: name,
+        fetched: s?.fetched,
+        source: s?.source,
+      };
+      const item = { id: `photo-${name}`, name, raw };
+      const firstPlace = s?.places[0];
       return `<article class="card">
         <h2 class="inline-h">${esc(name)}</h2>
-        ${extra}
-        <p>${esc(s?.detail || s?.action || "No behaviour text.")}</p>
-        ${s?.restriction ? `<p class="gap">${esc(s.restriction)}</p>` : ""}
-        ${placesHtml}
-        <p class="whisper">fetched-at ${esc(s?.fetched || "missing")}</p>
-        ${s?.source ? `<p class="whisper"><a href="${esc(s.source)}">Source</a></p>` : ""}
+        ${peek ? `<p class="lede">${esc(peek)}</p>` : ""}
+        ${firstPlace ? actionRow({ maps: mapsSearchUrl(firstPlace) }) : ""}
+        ${cardFolds(item, bundle)}
       </article>`;
     })
     .join("");
@@ -1646,7 +1591,14 @@ async function mountColorMap(bundle: TripBundle): Promise<void> {
     const peak = band?.modelled_peak
       ? `modelled peak ${band.modelled_peak}`
       : "no matching foliage band in this bundle";
-    const html = `<strong>${esc(p.name)}</strong><br>${esc(elev)}<br>${esc(peak)} · FORECAST<br>as-of: ${esc(asOf)}<br><a href="${esc(mapsUrl(p.lat, p.lon, p.name))}">Open in Maps</a>`;
+    const place = placeById(bundle, p.id);
+    const item = place
+      ? { id: place.id ?? p.id, name: place.name ?? p.name, raw: place as Record<string, unknown> }
+      : null;
+    const folds = item
+      ? cardFolds(item, bundle)
+      : `${foldSection("Why / why not", ["No why-go text in this bundle."])}${foldSection("Look out for", ["Look out for: not in this bundle."])}${foldSection("Around this", ["Around this: not in this bundle."])}${foldSection("Details", ["Details: not in this bundle."])}`;
+    const html = `<strong>${esc(p.name)}</strong><br>${esc(elev)}<br>${esc(peak)} · FORECAST<br>as-of: ${esc(asOf)}<br><a href="${esc(mapsUrl(p.lat, p.lon, p.name))}">Open in Maps</a>${folds}`;
     L.circleMarker([p.lat, p.lon], {
       radius: 10,
       color: "#e8b048",

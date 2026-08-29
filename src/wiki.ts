@@ -1,4 +1,5 @@
 import {
+  commonsCandidateOk,
   commonsSearchQueries,
   isRecord,
   judgeFallPhoto,
@@ -10,7 +11,7 @@ import {
   type WebcamHint,
 } from "./bundle";
 
-const PHOTO_CACHE = "colorado-place-photos-v3";
+const PHOTO_CACHE = "colorado-place-photos-v4";
 const memory = new Map<string, PlacePhoto>();
 
 export type PlacePhoto =
@@ -21,6 +22,7 @@ type SearchHit = { title: string };
 type ImageInfo = {
   url?: string;
   thumburl?: string;
+  mime?: string;
   extmetadata?: Record<string, { value?: string } | undefined>;
 };
 type QueryPage = {
@@ -93,7 +95,7 @@ async function remember(key: string, photo: PlacePhoto): Promise<void> {
 async function commonsSearch(query: string): Promise<string[]> {
   const url =
     "https://commons.wikimedia.org/w/api.php?origin=*&format=json&action=query&list=search" +
-    `&srnamespace=6&srlimit=5&srsearch=${encodeURIComponent(query)}`;
+    `&srnamespace=6&srlimit=8&srsearch=${encodeURIComponent(query)}`;
   const res = await fetch(url, { mode: "cors" });
   if (!res.ok) return [];
   const json = (await res.json()) as { query?: { search?: SearchHit[] } };
@@ -103,7 +105,7 @@ async function commonsSearch(query: string): Promise<string[]> {
 async function commonsFile(title: string): Promise<QueryPage | undefined> {
   const url =
     "https://commons.wikimedia.org/w/api.php?origin=*&format=json&action=query&prop=imageinfo|categories" +
-    "&iiprop=url|extmetadata&iiurlwidth=800&cllimit=20&titles=" +
+    "&iiprop=url|mime|extmetadata&iiurlwidth=800&cllimit=20&titles=" +
     encodeURIComponent(title);
   const res = await fetch(url, { mode: "cors" });
   if (!res.ok) return undefined;
@@ -130,6 +132,10 @@ async function firstFallCommons(name: string, area?: string): Promise<PlacePhoto
         if (!page) continue;
         const { url, input } = fallInputFromCommons(page);
         if (!url) continue;
+        const mime = page.imageinfo?.[0]?.mime;
+        if (!commonsCandidateOk({ mime, title: page.title ?? input.title, description: input.description, placeName: name })) {
+          continue;
+        }
         const verdict = judgeFallPhoto(input);
         if (!verdict.ok) continue;
         return { kind: "commons", imageUrl: url, credit: `Commons, ${verdict.why}` };

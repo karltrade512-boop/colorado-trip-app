@@ -436,10 +436,37 @@ export function commonsSearchQueries(name: string, area?: string): string[] {
   const titles = wikiTitleCandidates(name, area).slice(0, 3);
   const q: string[] = [];
   for (const t of titles) {
-    q.push(`${t} Colorado autumn`);
-    q.push(`${t} Colorado October`);
+    q.push(`"${t}" filetype:bitmap`);
+    q.push(`${t} Colorado filetype:bitmap`);
   }
   return q.slice(0, 6);
+}
+
+const WEAK_PLACE = /^(lake|lakes|peak|peaks|mount|mountain|creek|river|trail|falls|pond|pass|ridge)$/i;
+
+export function photoMentionsPlace(placeName: string, hay: string): boolean {
+  const bare = placeName.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+  const tokens = bare.split(/\s+/).filter((t) => t.length >= 3 && !/^(the|and|via|for|from)$/i.test(t));
+  const strong = tokens.filter((t) => !WEAK_PLACE.test(t));
+  const blob = hay.toLowerCase();
+  if (!strong.length) return blob.includes(bare.toLowerCase());
+  return strong.every((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(hay));
+}
+
+export function commonsCandidateOk(input: {
+  mime?: string;
+  title?: string;
+  description?: string;
+  placeName: string;
+}): boolean {
+  const mime = (input.mime ?? "").toLowerCase();
+  const title = input.title ?? "";
+  const description = input.description ?? "";
+  if (!mime.startsWith("image/") || mime.includes("svg")) return false;
+  if (/\.pdf$/i.test(title) || /\bpdf\b/i.test(title)) return false;
+  const hay = `${title} ${description}`;
+  if (/\b(trail[- ]map|just off the map|ecoregion|master plan|catalogue|catalog|HAER)\b/i.test(hay)) return false;
+  return photoMentionsPlace(input.placeName, hay);
 }
 
 export function wikiTitleCandidates(name: string, area?: string): string[] {

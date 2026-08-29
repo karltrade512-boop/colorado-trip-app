@@ -38,6 +38,8 @@ import {
   matchingFallWebcam,
   NO_FALL_PHOTO_LABEL,
   placePhotoDecision,
+  commonsSearchQueries,
+  commonsCandidateOk,
 } from "./bundle.ts";
 import { osmExtraExcluded } from "./live.ts";
 
@@ -381,6 +383,44 @@ describe("trip-bundle", () => {
     const food = collectionItems(bundle, "food", "food").find((p) => p.name === "The Country Market of Estes Park");
     assert.ok(food);
     assert.equal(placePhotoDecision(food.raw, food.id).kind, "none");
+    const queries = commonsSearchQueries("Bluebird Lake", "RMNP / Wild Basin");
+    assert.ok(queries.every((q) => q.includes("filetype:bitmap")));
+    assert.equal(
+      commonsCandidateOk({
+        mime: "application/pdf",
+        title: "File:Evenings with Colorado poets.pdf",
+        description: "autumn in Colorado",
+        placeName: "Bluebird Lake",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "Bear Lake - Lake Helene trail map (just off the map)",
+        description: "2013-09-02",
+        placeName: "Lake Helene",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "Golden-mantled Ground Squirrel CO",
+        description: "September 2006 in Colorado",
+        placeName: "Lake Isabelle",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "HELENE LAKE, ROCKY MOUNTAIN NATIONAL PARK",
+        description: "3.1 miles from Bear Lake",
+        placeName: "Lake Helene",
+      }),
+      true,
+    );
   });
 
   it("prints Lost Lake why from wildlife or review_summary", () => {

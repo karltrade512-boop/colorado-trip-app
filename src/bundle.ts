@@ -474,7 +474,7 @@ export function commonsCandidateOk(input: {
   if (/\.pdf$/i.test(title) || /\bpdf\b/i.test(title)) return false;
   if (/\b(trail[- ]map|just off the map|ecoregion|master plan|catalogue|catalog|HAER|atlas|DPLA)\b/i.test(hay)) return false;
   if (ELSEWHERE.test(hay) && !TRIP_AREA.test(hay)) return false;
-  if (!photoMentionsPlace(input.placeName, hay)) return false;
+  if (!photoMentionsPlace(input.placeName, title)) return false;
   const bare = input.placeName.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
   if (GENERIC_LAKE.test(bare)) return TRIP_AREA.test(hay);
   return TRIP_AREA.test(hay) || /\bcolorado\b/i.test(hay);

@@ -11,7 +11,7 @@ import {
   type WebcamHint,
 } from "./bundle";
 
-const PHOTO_CACHE = "colorado-place-photos-v5";
+const PHOTO_CACHE = "colorado-place-photos-v6";
 const memory = new Map<string, PlacePhoto>();
 
 export type PlacePhoto =

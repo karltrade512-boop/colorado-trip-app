@@ -407,7 +407,8 @@ describe("trip-bundle", () => {
       commonsCandidateOk({
         mime: "image/jpeg",
         title: "Golden-mantled Ground Squirrel CO",
-        description: "September 2006 in Colorado",
+        description: "Photo taken near Lake Isabelle in the Indian Peaks Wilderness",
+        categories: "Indian Peaks Wilderness; September 2006 in Colorado",
         placeName: "Lake Isabelle",
       }),
       false,

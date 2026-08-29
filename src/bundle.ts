@@ -507,6 +507,126 @@ export function darkestPlausibleNight(days: Day[]): { day: Day; hours: number } 
   return best;
 }
 
+export type FoliageCam = { name: string; url: string; note?: string };
+export type FoliageSource = { name: string; url: string; what?: string; kind?: string };
+export type FoliageBand = { place: string; elevation_ft?: number; modelled_peak?: string };
+
+function foliageRoot(bundle: TripBundle): Record<string, unknown> | undefined {
+  const v = collection(bundle, "foliage");
+  return isRecord(v) ? v : undefined;
+}
+
+export function foliageWebcams(bundle: TripBundle): FoliageCam[] {
+  const f = foliageRoot(bundle);
+  if (!f) return [];
+  return asArray(f.webcams)
+    .filter(isRecord)
+    .map((c) => ({
+      name: str(c.name) ?? str(c.title) ?? "webcam",
+      url: str(c.url) ?? str(c.href) ?? "",
+      note: str(c.note),
+    }))
+    .filter((c) => /^https?:\/\//.test(c.url));
+}
+
+export function foliageSources(bundle: TripBundle): FoliageSource[] {
+  const f = foliageRoot(bundle);
+  if (!f) return [];
+  return asArray(f.sources)
+    .filter(isRecord)
+    .map((s) => ({
+      name: str(s.name) ?? str(s.title) ?? "source",
+      url: str(s.url) ?? str(s.href) ?? "",
+      what: str(s.what) ?? str(s.note),
+      kind: str(s.kind),
+    }))
+    .filter((s) => /^https?:\/\//.test(s.url));
+}
+
+export function foliageExploreFallUrl(bundle: TripBundle): string | undefined {
+  const hit = foliageSources(bundle).find((s) => /explore fall/i.test(s.name) && /colorado/i.test(s.name + s.url));
+  return hit?.url;
+}
+
+export function foliageBands(bundle: TripBundle): FoliageBand[] {
+  const f = foliageRoot(bundle);
+  if (!f || !isRecord(f.model) || !Array.isArray(f.model.bands)) return [];
+  return f.model.bands.filter(isRecord).map((b) => ({
+    place: str(b.place) ?? "place",
+    elevation_ft: num(b.elevation_ft),
+    modelled_peak: str(b.modelled_peak),
+  }));
+}
+
+export function foliageModelStatus(bundle: TripBundle): string | undefined {
+  const f = foliageRoot(bundle);
+  return isRecord(f?.model) ? str(f.model.status) : undefined;
+}
+
+export function foliageCountyWindows(bundle: TripBundle): Array<{ county: string; from?: string; to?: string }> {
+  const f = foliageRoot(bundle);
+  if (!f || !isRecord(f.county_forecast)) return [];
+  return Object.entries(f.county_forecast).map(([county, val]) => {
+    if (Array.isArray(val) && val.length >= 2) return { county, from: str(val[0]), to: str(val[1]) };
+    if (Array.isArray(val) && val.length === 1) return { county, from: str(val[0]) };
+    return { county, from: typeof val === "string" ? val : undefined };
+  });
+}
+
+export function foliageHasObservation(bundle: TripBundle): boolean {
+  const f = foliageRoot(bundle);
+  if (!f) return false;
+  return f.OBSERVATION !== undefined || f.observation !== undefined || f.observed !== undefined;
+}
+
+export function foliageModelFetched(bundle: TripBundle): string | undefined {
+  const f = foliageRoot(bundle);
+  return isRecord(f?.model) ? str(f.model.fetched) ?? str(f.fetched) : undefined;
+}
+
+export function foliageRanking(bundle: TripBundle): string | undefined {
+  const f = foliageRoot(bundle);
+  return str(f?.ranking);
+}
+
+export function foliageBandForPlace(bundle: TripBundle, placeName: string): FoliageBand | undefined {
+  const needle = placeName.toLowerCase();
+  return foliageBands(bundle).find((b) => needle.includes(b.place.toLowerCase()) || b.place.toLowerCase().includes(needle));
+}
+
+export type BehaviourSubject = {
+  id: string;
+  action?: string;
+  detail?: string;
+  restriction?: string;
+  fetched?: string;
+  source?: string;
+  places: string[];
+};
+
+export function behaviourSubject(bundle: TripBundle, id: string): BehaviourSubject | undefined {
+  const b = collection(bundle, "behaviour");
+  if (!isRecord(b) || !isRecord(b.subjects)) return undefined;
+  const rec = b.subjects[id];
+  if (!isRecord(rec)) return undefined;
+  const places = Array.isArray(rec.places_named_by_source)
+    ? rec.places_named_by_source.map(String).filter(Boolean)
+    : [];
+  return {
+    id,
+    action: str(rec.action),
+    detail: str(rec.detail),
+    restriction: str(rec.restriction),
+    fetched: str(rec.fetched),
+    source: str(rec.source),
+    places,
+  };
+}
+
+export function tripSubjects(bundle: TripBundle): string[] {
+  return (bundle.trip?.subjects ?? []).map(String);
+}
+
 export function validateBundle(json: unknown): TripBundle {
   if (!isRecord(json)) throw new Error("Bundle is not an object");
   if (json.schema_version !== "1.0.0") {

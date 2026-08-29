@@ -54,14 +54,22 @@ export async function fetchLive(target: { url: string; label: string; kind: "web
 
 const OVERPASS = "https://overpass-api.de/api/interpreter";
 
+export function osmExtraExcluded(tags: Record<string, unknown>): boolean {
+  const amenity = str(tags.amenity)?.toLowerCase();
+  return amenity === "fuel" || amenity === "charging_station";
+}
+
 export async function fetchUnverifiedExtras(lat: number, lon: number): Promise<UnverifiedExtra[]> {
   const q = `
 [out:json][timeout:20];
 (
   node["tourism"="viewpoint"](around:8000,${lat},${lon});
+  node["scenic"="yes"](around:8000,${lat},${lon});
   node["tourism"="picnic_site"](around:8000,${lat},${lon});
   node["leisure"="wildlife_hide"](around:8000,${lat},${lon});
-  node["amenity"="hunting_stand"](around:8000,${lat},${lon});
+  node["leisure"="bird_hide"](around:8000,${lat},${lon});
+  node["highway"="rest_area"](around:8000,${lat},${lon});
+  node["parking"="layby"](around:8000,${lat},${lon});
   node["natural"="peak"]["tourism"](around:8000,${lat},${lon});
   way["tourism"="viewpoint"](around:8000,${lat},${lon});
 );
@@ -82,10 +90,15 @@ out center 30;
     const plat = numish(el.lat) ?? (isRecord(el.center) ? numish(el.center.lat) : undefined);
     const plon = numish(el.lon) ?? (isRecord(el.center) ? numish(el.center.lon) : undefined);
     if (plat === undefined || plon === undefined) continue;
-    const amenity = str(tags.amenity)?.toLowerCase();
-    if (amenity === "fuel" || amenity === "charging_station") continue;
+    if (osmExtraExcluded(tags)) continue;
     const name = str(tags.name) ?? str(tags.tourism) ?? str(tags.leisure) ?? "unnamed OSM feature";
-    const kind = str(tags.tourism) ?? str(tags.leisure) ?? str(tags.amenity) ?? "osm";
+    const kind =
+      str(tags.tourism) ??
+      str(tags.leisure) ??
+      str(tags.highway) ??
+      str(tags.parking) ??
+      str(tags.amenity) ??
+      (str(tags.scenic) ? "overlook" : "osm");
     extras.push({
       id: `osm-${String(el.type)}-${String(el.id)}`,
       name,

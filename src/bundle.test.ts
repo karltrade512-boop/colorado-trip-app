@@ -11,7 +11,20 @@ import {
   daysList,
   collectionItems,
   darkestPlausibleNight,
+  foliageWebcams,
+  foliageExploreFallUrl,
+  foliageBands,
+  foliageCountyWindows,
+  foliageHasObservation,
+  foliageModelFetched,
+  foliageModelStatus,
+  foliageRanking,
+  foliageBandForPlace,
+  behaviourSubject,
+  tripSubjects,
+  placesList,
 } from "./bundle.ts";
+import { osmExtraExcluded } from "./live.ts";
 
 describe("trip-bundle", () => {
   const json = JSON.parse(readFileSync(new URL("../public/trip-bundle.json", import.meta.url), "utf8"));
@@ -148,5 +161,62 @@ describe("trip-bundle", () => {
     assert.equal(hit.hours, 6.4);
     const oct4 = daysList(bundle).find((d) => d.date === "2026-10-04");
     assert.match(oct4?.light?.moon?.verdict ?? "", /5\.2 h of real darkness/);
+  });
+
+  it("lists seven RMNP webcam stills and Explore Fall as a source, not an observation", () => {
+    const cams = foliageWebcams(bundle);
+    assert.equal(cams.length, 7);
+    assert.ok(cams.some((c) => c.name === "Alpine Visitor Center"));
+    assert.ok(cams.some((c) => c.name === "Grand Lake Entrance"));
+    assert.equal(foliageExploreFallUrl(bundle), "https://www.explorefall.com/states/colorado.html");
+    assert.equal(foliageHasObservation(bundle), false);
+    assert.match(foliageRanking(bundle) ?? "", /webcam still outranks/i);
+  });
+
+  it("prints Drake and Nederland modelled peaks and both county forecast windows", () => {
+    const bands = foliageBands(bundle);
+    const drake = bands.find((b) => b.place === "Drake");
+    const nederland = bands.find((b) => b.place === "Nederland");
+    assert.equal(drake?.modelled_peak, "2026-10-03");
+    assert.equal(nederland?.modelled_peak, "2026-09-23");
+    assert.equal(foliageBandForPlace(bundle, "Drake, CO")?.modelled_peak, "2026-10-03");
+    assert.equal(foliageBandForPlace(bundle, "Nederland, CO")?.modelled_peak, "2026-09-23");
+    const counties = foliageCountyWindows(bundle);
+    assert.deepEqual(
+      counties.find((c) => c.county === "Larimer"),
+      { county: "Larimer", from: "2026-09-17", to: "2026-09-21" },
+    );
+    assert.deepEqual(
+      counties.find((c) => c.county === "Boulder"),
+      { county: "Boulder", from: "2026-09-17", to: "2026-09-21" },
+    );
+    assert.match(foliageModelStatus(bundle) ?? "", /MODEL, not observation/i);
+    assert.equal(foliageModelFetched(bundle), "2026-08-28");
+  });
+
+  it("does not invent coordinates beyond cabins and origin already in the bundle", () => {
+    const pinned = placesList(bundle).filter((p) => p.lat != null && p.lon != null).map((p) => p.id);
+    assert.deepEqual(pinned.sort(), ["drake", "nederland", "origin"]);
+  });
+
+  it("names the five elk meadows from behaviour and keeps bighorn NOT in rut", () => {
+    assert.deepEqual(tripSubjects(bundle), ["raptors", "owls", "fall-color", "elk", "bighorn", "landscape"]);
+    const elk = behaviourSubject(bundle, "elk");
+    assert.deepEqual(elk?.places, [
+      "Horseshoe Park",
+      "Moraine Park",
+      "Upper Beaver Meadows",
+      "Harbison Meadow",
+      "Holzwarth Meadow",
+    ]);
+    const bighorn = behaviourSubject(bundle, "bighorn");
+    assert.match(bighorn?.detail ?? "", /NOT in rut/i);
+    assert.deepEqual(bighorn?.places, []);
+  });
+
+  it("never treats fuel or charging stations as Around extras", () => {
+    assert.equal(osmExtraExcluded({ amenity: "fuel" }), true);
+    assert.equal(osmExtraExcluded({ amenity: "charging_station" }), true);
+    assert.equal(osmExtraExcluded({ tourism: "viewpoint" }), false);
   });
 });

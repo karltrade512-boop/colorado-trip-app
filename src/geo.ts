@@ -19,6 +19,13 @@ export function mapsUrl(lat: number, lon: number, label?: string): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
 }
 
+export function mapsSearchUrl(query: string): string {
+  const q = encodeURIComponent(query);
+  const ios = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (ios) return `https://maps.apple.com/?q=${q}`;
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+
 export function isStandalone(): boolean {
   const nav = window.navigator as Navigator & { standalone?: boolean };
   if (nav.standalone) return true;

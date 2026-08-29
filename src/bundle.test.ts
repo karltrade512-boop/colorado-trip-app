@@ -308,6 +308,7 @@ describe("trip-bundle", () => {
     assert.match(all, /disagreement|13\.6 vs/i);
     assert.equal(sec.why.includes("No why-go text in this bundle."), false);
     assert.ok(sec.around.includes("Ouzel Lake"));
+    assert.ok(sec.details.includes("no pin in this bundle"));
   });
 
   it("prints Lost Lake why from wildlife or review_summary", () => {

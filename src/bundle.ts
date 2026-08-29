@@ -381,6 +381,9 @@ export function placeCardSections(item: NamedItem, bundle: TripBundle): PlaceCar
   if (diet.gfQuote) pushLine(lookOut, `GF: “${diet.gfQuote}”`);
   if (diet.dfQuote) pushLine(lookOut, `DF: “${diet.dfQuote}”`);
 
+  if ((str(raw.trailhead) || isRecord(raw.alltrails)) && !itemLatLon(raw)) {
+    pushLine(details, "no pin in this bundle");
+  }
   pushLine(details, str(raw.trailhead) ? `trailhead ${str(raw.trailhead)}` : undefined);
   for (const g of gainLines(raw)) pushLine(details, g);
   if (at && num(at.duration_min) !== undefined) {

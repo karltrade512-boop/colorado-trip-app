@@ -89,6 +89,11 @@ export function pickDay(bundle: TripBundle, date: string): Day | undefined {
   return daysList(bundle).find((d) => d.date === date);
 }
 
+export function defaultCabinFromDay(day: { base?: string | null } | undefined): "drake" | "nederland" {
+  if (day?.base === "nederland") return "nederland";
+  return "drake";
+}
+
 export function nextOrToday(bundle: TripBundle, nowIso: string): { day?: Day; status: "today" | "before" | "after" | "gap" } {
   const days = daysList(bundle).slice().sort((a, b) => a.date.localeCompare(b.date));
   const hit = days.find((d) => d.date === nowIso);

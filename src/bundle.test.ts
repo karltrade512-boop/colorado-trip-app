@@ -21,6 +21,7 @@ import {
   foliageModelStatus,
   foliageRanking,
   foliageBandForPlace,
+  defaultCabinFromDay,
   foodDirectories,
   behaviourSubject,
   tripSubjects,
@@ -270,5 +271,24 @@ describe("trip-bundle", () => {
     const day = daysList(bundle).find((d) => d.date === "2026-09-29");
     assert.deepEqual(day?.light?.thermals, ["09:47", "15:54"]);
     assert.equal(foliageModelRule(bundle), "Colour descends ~1.5 days per 100 m of elevation.");
+  });
+
+  it("defaults cabin to Drake when the day’s base is null", () => {
+    const drive = daysList(bundle).find((d) => d.date === "2026-09-27");
+    assert.equal(drive?.base, null);
+    assert.equal(defaultCabinFromDay(drive), "drake");
+    const ned = daysList(bundle).find((d) => d.date === "2026-10-02");
+    assert.equal(ned?.base, "nederland");
+    assert.equal(defaultCabinFromDay(ned), "nederland");
+    const drakeDay = daysList(bundle).find((d) => d.date === "2026-09-29");
+    assert.equal(drakeDay?.base, "drake");
+    assert.equal(defaultCabinFromDay(drakeDay), "drake");
+  });
+
+  it("keeps diet-unknown food in the directory", () => {
+    const items = collectionItems(bundle, "food", "food");
+    const unknownDf = items.filter((i) => /unknown/i.test(gfDf(i.raw).df));
+    assert.ok(unknownDf.length > 0);
+    assert.ok(unknownDf.some((i) => i.name === "The Country Market of Estes Park"));
   });
 });

@@ -317,6 +317,117 @@ export function bundleImage(raw: Record<string, unknown>): { url: string; label:
   return undefined;
 }
 
+export type FallPhotoInput = {
+  dateText?: string;
+  title?: string;
+  description?: string;
+  categories?: string;
+};
+
+export type FallPhotoVerdict = { ok: true; why: string } | { ok: false; why: string };
+
+const MONTHS: Record<string, number> = {
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+  jan: 1, feb: 2, mar: 3, apr: 4, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12,
+};
+
+const MONTH_SHORT = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function parsePhotoMonthYear(text: string | undefined): { month: number; year?: number } | undefined {
+  if (!text) return undefined;
+  const iso = text.match(/(\d{4})[-:](\d{2})[-:](\d{2})/);
+  if (iso) return { year: Number(iso[1]), month: Number(iso[2]) };
+  const named = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec)\b\.?\s+(\d{4})/i);
+  if (named) {
+    const month = MONTHS[named[1].toLowerCase()];
+    if (month) return { month, year: Number(named[2]) };
+  }
+  const named2 = text.match(/(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec)\b\.?\s+(\d{4})/i);
+  if (named2) {
+    const month = MONTHS[named2[2].toLowerCase()];
+    if (month) return { month, year: Number(named2[3]) };
+  }
+  return undefined;
+}
+
+export function judgeFallPhoto(input: FallPhotoInput): FallPhotoVerdict {
+  const text = [input.title, input.description, input.categories].filter(Boolean).join(" ");
+  const fallTagged = /\b(fall|autumn|aspen|foliage|gold(?:en)?(?:\s+(?:aspen|leaves|larch|color|colour))?)\b/i.test(text);
+  const aspenGold = /\baspen\b/i.test(text) && /\b(gold|golden|autumn|fall|foliage)\b/i.test(text);
+  const winterish = /\b(snow|ski(?:ing)?|ice|winter|blizzard|frozen)\b/i.test(text);
+  const dt = parsePhotoMonthYear(input.dateText) ?? parsePhotoMonthYear(text);
+  if (dt) {
+    const stamp = `${MONTH_SHORT[dt.month]}${dt.year ? ` ${dt.year}` : ""}`;
+    if (dt.month >= 1 && dt.month <= 4) {
+      if (aspenGold) return { ok: true, why: `tagged aspen gold · ${stamp}` };
+      return { ok: false, why: "winter/spring date" };
+    }
+    if (dt.month === 9 || dt.month === 10) {
+      if (winterish && !fallTagged && !aspenGold) return { ok: false, why: "snow/winter in description" };
+      return { ok: true, why: stamp };
+    }
+    if (fallTagged || aspenGold) {
+      if (winterish && !aspenGold) return { ok: false, why: "winter tags" };
+      return { ok: true, why: "tagged autumn" };
+    }
+    return { ok: false, why: "season not fall" };
+  }
+  if (winterish && !aspenGold) return { ok: false, why: "winter tags" };
+  if (fallTagged || aspenGold) return { ok: true, why: "tagged autumn" };
+  return { ok: false, why: "date unknown" };
+}
+
+export type WebcamHint = { name: string; url: string; note?: string };
+
+export function matchingFallWebcam(
+  place: { name: string; area?: string; trailhead?: string; extra?: string },
+  cams: WebcamHint[],
+): WebcamHint | undefined {
+  const hay = [place.name, place.area, place.trailhead, place.extra].filter(Boolean).join(" ").toLowerCase();
+  for (const cam of cams) {
+    const n = cam.name.toLowerCase();
+    if (n.includes("alpine visitor")) {
+      if (/alpine visitor|trail ridge/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("glacier basin")) {
+      if (/glacier basin|glacier gorge/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("longs peak")) {
+      if (/longs peak/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("fall river")) {
+      if (/fall river/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("beaver meadows")) {
+      if (/beaver meadows/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("kawuneeche") || /harbison/i.test(cam.note ?? "")) {
+      if (/kawuneeche|harbison/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("grand lake")) {
+      if (/grand lake/.test(hay)) return cam;
+    }
+  }
+  return undefined;
+}
+
+export function commonsSearchQueries(name: string, area?: string): string[] {
+  const titles = wikiTitleCandidates(name, area).slice(0, 3);
+  const q: string[] = [];
+  for (const t of titles) {
+    q.push(`${t} Colorado autumn`);
+    q.push(`${t} Colorado October`);
+  }
+  return q.slice(0, 6);
+}
+
 export function wikiTitleCandidates(name: string, area?: string): string[] {
   const titles: string[] = [];
   const push = (t: string) => {

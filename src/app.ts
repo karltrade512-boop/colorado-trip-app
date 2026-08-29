@@ -26,6 +26,7 @@ import {
   foodDirectories,
   peekMilesLines,
   bundleImage,
+  judgeFallPhoto,
   placeAbout,
   placeCardSections,
   gatewayFallback,
@@ -416,17 +417,21 @@ function cardFolds(item: ReturnType<typeof namedItems>[number], bundle: TripBund
 function photoPeek(item: ReturnType<typeof namedItems>[number]): string {
   const bundled = bundleImage(item.raw);
   if (bundled) {
-    return `<figure class="place-photo">
-      <img src="${esc(bundled.url)}" alt="${esc(item.name)}" />
-      <figcaption>${esc(bundled.label)}</figcaption>
-    </figure>`;
+    const verdict = judgeFallPhoto({ title: bundled.label, description: bundled.url });
+    if (verdict.ok) {
+      return `<figure class="place-photo">
+        <img src="${esc(bundled.url)}" alt="${esc(item.name)}" />
+        <figcaption>${esc(bundled.label)} · ${esc(verdict.why)}</figcaption>
+      </figure>`;
+    }
   }
-  const tryWiki = Boolean(str(item.raw.trailhead) || isRecord(item.raw.alltrails) || item.id.startsWith("photo-"));
-  if (!tryWiki) {
-    return `<figure class="place-photo none"><p class="whisper">No photo in this bundle</p></figure>`;
+  const tryLookup = Boolean(str(item.raw.trailhead) || isRecord(item.raw.alltrails) || item.id.startsWith("photo-"));
+  if (!tryLookup) {
+    return `<figure class="place-photo none"><p class="whisper">No fall photo in this bundle</p></figure>`;
   }
-  return `<figure class="place-photo waiting" data-photo-name="${esc(item.name)}" data-photo-area="${esc(areaOf(item.raw) ?? "")}">
-    <p class="whisper">No photo in this bundle</p>
+  const extra = isRecord(item.raw.alltrails) ? str(item.raw.alltrails.name) ?? "" : "";
+  return `<figure class="place-photo waiting" data-photo-name="${esc(item.name)}" data-photo-area="${esc(areaOf(item.raw) ?? "")}" data-photo-trail="${esc(str(item.raw.trailhead) ?? "")}" data-photo-extra="${esc(extra)}">
+    <p class="whisper">No fall photo in this bundle</p>
   </figure>`;
 }
 
@@ -1686,7 +1691,7 @@ export function paint(): void {
     void mountColorMap(state.bundle);
   }
   afterPaint();
-  if (!printing) void hydratePlacePhotos();
+  if (!printing) void hydratePlacePhotos(document, state.bundle ? foliageWebcams(state.bundle) : []);
 }
 
 function bind(): void {

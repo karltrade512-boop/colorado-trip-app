@@ -34,6 +34,8 @@ import {
   placeAbout,
   wikiTitleCandidates,
   bundleImage,
+  judgeFallPhoto,
+  matchingFallWebcam,
 } from "./bundle.ts";
 import { osmExtraExcluded } from "./live.ts";
 
@@ -329,6 +331,30 @@ describe("trip-bundle", () => {
     assert.ok(loch.includes("The Loch (Rocky Mountain National Park)"));
     assert.equal(bundleImage({}), undefined);
     assert.equal(bundleImage({ image: "https://example.com/x.jpg", photo: null })?.url, "https://example.com/x.jpg");
+    assert.equal(judgeFallPhoto({ title: "Wikipedia thumb", description: "https://upload.wikimedia.org/x.jpg" }).ok, false);
+  });
+
+  it("accepts only Sep/Oct or explicit autumn tags for place photos", () => {
+    const oct = judgeFallPhoto({ dateText: "2019-10-12 08:11:00" });
+    assert.equal(oct.ok, true);
+    if (oct.ok) assert.match(oct.why, /Oct 2019/);
+    assert.equal(judgeFallPhoto({ dateText: "2019-01-12" }).ok, false);
+    const janAspen = judgeFallPhoto({ dateText: "2019-01-12", description: "aspen gold on the ridge" });
+    assert.equal(janAspen.ok, true);
+    const tagged = judgeFallPhoto({ categories: "Autumn in Colorado; Aspen" });
+    assert.equal(tagged.ok, true);
+    if (tagged.ok) assert.equal(tagged.why, "tagged autumn");
+    assert.equal(judgeFallPhoto({ description: "snow and ski tour" }).ok, false);
+    assert.equal(judgeFallPhoto({ dateText: "2019-07-04" }).ok, false);
+    assert.equal(judgeFallPhoto({}).ok, false);
+    const cams = [
+      { name: "Alpine Visitor Center", url: "https://example.com/avc.jpg" },
+      { name: "Glacier Basin", url: "https://example.com/gb.jpg" },
+      { name: "Longs Peak", url: "https://example.com/lp.jpg" },
+    ];
+    assert.equal(matchingFallWebcam({ name: "Bluebird Lake", area: "RMNP / Wild Basin" }, cams), undefined);
+    assert.equal(matchingFallWebcam({ name: "Chasm Lake", trailhead: "Longs Peak Ranger Station" }, cams)?.name, "Longs Peak");
+    assert.equal(matchingFallWebcam({ name: "The Loch", extra: "The Loch via Glacier Gorge Trail" }, cams)?.name, "Glacier Basin");
   });
 
   it("prints Lost Lake why from wildlife or review_summary", () => {

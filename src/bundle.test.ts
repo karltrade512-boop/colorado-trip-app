@@ -17,12 +17,19 @@ import {
   foliageCountyWindows,
   foliageHasObservation,
   foliageModelFetched,
+  foliageModelRule,
   foliageModelStatus,
   foliageRanking,
   foliageBandForPlace,
+  defaultCabinFromDay,
+  foodDirectories,
   behaviourSubject,
   tripSubjects,
   placesList,
+  landAccessAreas,
+  landNamedExceptions,
+  permitPrint,
+  sheetMilesLines,
 } from "./bundle.ts";
 import { osmExtraExcluded } from "./live.ts";
 
@@ -218,5 +225,70 @@ describe("trip-bundle", () => {
     assert.equal(osmExtraExcluded({ amenity: "fuel" }), true);
     assert.equal(osmExtraExcluded({ amenity: "charging_station" }), true);
     assert.equal(osmExtraExcluded({ tourism: "viewpoint" }), false);
+  });
+
+  it("prints Lost Lake (Hessie) sheet facts from the engine file", () => {
+    const hike = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Lost Lake (Hessie)");
+    assert.ok(hike);
+    assert.equal(hike.raw.trailhead, "Hessie Trailhead, County Road 130");
+    const miles = sheetMilesLines(hike.raw);
+    assert.ok(miles.some((l) => /AllTrails/i.test(l) && l.includes("4.2")));
+    assert.ok(miles.some((l) => /agency/i.test(l) && l.includes("2.1")));
+    assert.equal(hike.raw.behind_brainard_gate, false);
+    assert.match(String(hike.raw.wildlife), /Moose and brook trout/i);
+  });
+
+  it("keeps Lake Isabelle gated with the disagreement string", () => {
+    const hike = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Lake Isabelle");
+    assert.ok(hike);
+    assert.equal(hike.raw.behind_brainard_gate, true);
+    assert.match(String(hike.raw.disagreement), /AllTrails 6\.6/);
+    assert.equal(permitPrint(hike.raw), "permit unknown");
+  });
+
+  it("prints Country Market address and GF official/stocked", () => {
+    const place = collectionItems(bundle, "food", "food").find((p) => p.name === "The Country Market of Estes Park");
+    assert.ok(place);
+    assert.equal(place.raw.address, "900 Moraine Ave, Estes Park, CO 80517");
+    const diet = gfDf(place.raw);
+    assert.equal(diet.gf, "GF: stocked (official)");
+    assert.equal(foodDirectories(bundle).estes_park, "https://www.findmeglutenfree.com/us/co/estes-park");
+  });
+
+  it("prints Brainard trip_dates_status for Oct 2–5 and Caribou Ranch as a named exception", () => {
+    const brainard = landAccessAreas(bundle)[0];
+    assert.ok(brainard);
+    const timed = brainard.timed_entry as { trip_dates_status?: string };
+    assert.match(timed.trip_dates_status ?? "", /Oct 2-5/);
+    const names = landNamedExceptions(bundle).map((e) => String(e.match));
+    assert.ok(names.includes("Caribou Ranch"));
+    assert.ok(names.includes("Hall Ranch"));
+    assert.ok(names.includes("Heil Valley Ranch"));
+    assert.ok(names.includes("Dodd Lake"));
+  });
+
+  it("has thermals on 2026-09-29 and the foliage elevation rule", () => {
+    const day = daysList(bundle).find((d) => d.date === "2026-09-29");
+    assert.deepEqual(day?.light?.thermals, ["09:47", "15:54"]);
+    assert.equal(foliageModelRule(bundle), "Colour descends ~1.5 days per 100 m of elevation.");
+  });
+
+  it("defaults cabin to Drake when the day’s base is null", () => {
+    const drive = daysList(bundle).find((d) => d.date === "2026-09-27");
+    assert.equal(drive?.base, null);
+    assert.equal(defaultCabinFromDay(drive), "drake");
+    const ned = daysList(bundle).find((d) => d.date === "2026-10-02");
+    assert.equal(ned?.base, "nederland");
+    assert.equal(defaultCabinFromDay(ned), "nederland");
+    const drakeDay = daysList(bundle).find((d) => d.date === "2026-09-29");
+    assert.equal(drakeDay?.base, "drake");
+    assert.equal(defaultCabinFromDay(drakeDay), "drake");
+  });
+
+  it("keeps diet-unknown food in the directory", () => {
+    const items = collectionItems(bundle, "food", "food");
+    const unknownDf = items.filter((i) => /unknown/i.test(gfDf(i.raw).df));
+    assert.ok(unknownDf.length > 0);
+    assert.ok(unknownDf.some((i) => i.name === "The Country Market of Estes Park"));
   });
 });

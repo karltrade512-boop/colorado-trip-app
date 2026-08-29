@@ -89,6 +89,11 @@ export function pickDay(bundle: TripBundle, date: string): Day | undefined {
   return daysList(bundle).find((d) => d.date === date);
 }
 
+export function defaultCabinFromDay(day: { base?: string | null } | undefined): "drake" | "nederland" {
+  if (day?.base === "nederland") return "nederland";
+  return "drake";
+}
+
 export function nextOrToday(bundle: TripBundle, nowIso: string): { day?: Day; status: "today" | "before" | "after" | "gap" } {
   const days = daysList(bundle).slice().sort((a, b) => a.date.localeCompare(b.date));
   const hit = days.find((d) => d.date === nowIso);
@@ -208,12 +213,26 @@ export function dogStatus(raw: Record<string, unknown>): DogStatus {
   return "unknown";
 }
 
-export type DietPrint = { gf: string; df: string; gfQuote?: string; dfQuote?: string };
+export type DietPrint = {
+  gf: string;
+  df: string;
+  gfQuote?: string;
+  dfQuote?: string;
+  gfSource?: string;
+  dfSource?: string;
+};
 
 export function gfDf(raw: Record<string, unknown>): DietPrint {
   const gf = formatDiet(pick(raw, ["gf", "gluten_free", "gluten-free", "GF"]), "GF");
   const df = formatDiet(pick(raw, ["df", "dairy_free", "dairy-free", "DF"]), "DF");
-  return { gf: gf.line, df: df.line, gfQuote: gf.quote, dfQuote: df.quote };
+  return {
+    gf: gf.line,
+    df: df.line,
+    gfQuote: gf.quote,
+    dfQuote: df.quote,
+    gfSource: gf.sourceUrl,
+    dfSource: df.sourceUrl,
+  };
 }
 
 function nonUrl(v: string | undefined): string | undefined {
@@ -222,7 +241,7 @@ function nonUrl(v: string | undefined): string | undefined {
   return v;
 }
 
-function formatDiet(v: unknown, label: string): { line: string; quote?: string } {
+function formatDiet(v: unknown, label: string): { line: string; quote?: string; sourceUrl?: string } {
   if (v === undefined || v === null || v === "") return { line: `${label}: unknown` };
   if (typeof v === "boolean") return { line: v ? `${label}: tagged` : `${label}: not tagged` };
   if (isRecord(v)) {
@@ -231,9 +250,103 @@ function formatDiet(v: unknown, label: string): { line: string; quote?: string }
     const sourceLabel = nonUrl(str(v.source) ?? str(v.from) ?? str(v.kind));
     const paren = confidence ?? sourceLabel;
     const quote = str(v.quote);
-    return { line: paren ? `${label}: ${status} (${paren})` : `${label}: ${status}`, quote };
+    const sourceUrl = str(v.source);
+    return {
+      line: paren ? `${label}: ${status} (${paren})` : `${label}: ${status}`,
+      quote,
+      sourceUrl: sourceUrl && /^https?:\/\//i.test(sourceUrl) ? sourceUrl : undefined,
+    };
   }
   return { line: `${label}: ${String(v)}` };
+}
+
+export function sheetMilesLines(raw: Record<string, unknown>): string[] {
+  const lines: string[] = [];
+  if (isRecord(raw.alltrails)) {
+    const rt = num(raw.alltrails.round_trip_mi);
+    if (rt !== undefined) lines.push(`AllTrails: ${rt} mi round trip`);
+  }
+  if (isRecord(raw.agency)) {
+    const ow = num(raw.agency.one_way_mi);
+    if (ow !== undefined) lines.push(`agency: ${ow} mi one way`);
+  }
+  if (raw.each_way_mi !== undefined && raw.each_way_mi !== null && raw.each_way_mi !== "") {
+    lines.push(`each way: ${String(raw.each_way_mi)} mi (derived)`);
+  }
+  return lines;
+}
+
+export function gainLines(raw: Record<string, unknown>): string[] {
+  const lines: string[] = [];
+  if (isRecord(raw.alltrails)) {
+    const g = num(raw.alltrails.gain_ft);
+    if (g !== undefined) lines.push(`AllTrails: ${g} ft gain`);
+  }
+  if (isRecord(raw.agency)) {
+    const g = num(raw.agency.gain_ft);
+    if (g !== undefined) lines.push(`agency: ${g} ft gain`);
+  }
+  return lines;
+}
+
+export function permitPrint(raw: Record<string, unknown>): string {
+  if (!("permit" in raw) || raw.permit === undefined || raw.permit === null || raw.permit === "") {
+    return "permit unknown";
+  }
+  return permitOf(raw) ?? "permit unknown";
+}
+
+export function servesOf(raw: Record<string, unknown>): string[] {
+  if (!Array.isArray(raw.serves)) return [];
+  return raw.serves.map(String).filter(Boolean);
+}
+
+export function gatewayFallback(bundle: TripBundle): Record<string, unknown> | undefined {
+  const h = collection(bundle, "hikes");
+  if (!isRecord(h) || !isRecord(h.gateway_fallback)) return undefined;
+  return h.gateway_fallback;
+}
+
+export function foodDirectories(bundle: TripBundle): Record<string, string> {
+  const food = collection(bundle, "food");
+  if (!isRecord(food) || !isRecord(food.directories)) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(food.directories)) {
+    const url = str(v);
+    if (url && /^https?:\/\//i.test(url)) out[k] = url;
+  }
+  return out;
+}
+
+export function landNamedExceptions(bundle: TripBundle): Array<Record<string, unknown>> {
+  const land = collection(bundle, "land_rules");
+  if (!isRecord(land) || !Array.isArray(land.named_exceptions)) return [];
+  return land.named_exceptions.filter(isRecord);
+}
+
+export function landPermits(bundle: TripBundle): Array<Record<string, unknown>> {
+  const land = collection(bundle, "land_rules");
+  if (!isRecord(land) || !Array.isArray(land.permits)) return [];
+  return land.permits.filter(isRecord);
+}
+
+export function landAccessAreas(bundle: TripBundle): Array<Record<string, unknown>> {
+  const land = collection(bundle, "land_rules");
+  if (!isRecord(land) || !Array.isArray(land.access_areas)) return [];
+  return land.access_areas.filter(isRecord);
+}
+
+export function landManagers(bundle: TripBundle): Array<{ name: string; raw: Record<string, unknown> }> {
+  const land = collection(bundle, "land_rules");
+  if (!isRecord(land) || !isRecord(land.managers)) return [];
+  return Object.entries(land.managers)
+    .filter(([, v]) => isRecord(v))
+    .map(([name, v]) => ({ name, raw: v as Record<string, unknown> }));
+}
+
+export function landFetched(bundle: TripBundle): string | undefined {
+  const land = collection(bundle, "land_rules");
+  return isRecord(land) ? str(land.fetched) : undefined;
 }
 
 export function milesLines(raw: Record<string, unknown>): string[] {
@@ -561,6 +674,11 @@ export function foliageBands(bundle: TripBundle): FoliageBand[] {
 export function foliageModelStatus(bundle: TripBundle): string | undefined {
   const f = foliageRoot(bundle);
   return isRecord(f?.model) ? str(f.model.status) : undefined;
+}
+
+export function foliageModelRule(bundle: TripBundle): string | undefined {
+  const f = foliageRoot(bundle);
+  return isRecord(f?.model) ? str(f.model.rule) : undefined;
 }
 
 export function foliageCountyWindows(bundle: TripBundle): Array<{ county: string; from?: string; to?: string }> {

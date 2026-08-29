@@ -491,7 +491,20 @@ export function darkHoursHint(day: Day): number | undefined {
   const v = day.light?.moon?.verdict;
   if (!v) return undefined;
   const m = v.match(/([\d.]+)\s*h of real darkness/i);
-  return m ? Number(m[1]) : undefined;
+  if (!m) return undefined;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Wrap-around moon verdicts (23–24 h on driving days) are not a night length. */
+export function darkestPlausibleNight(days: Day[]): { day: Day; hours: number } | undefined {
+  let best: { day: Day; hours: number } | undefined;
+  for (const day of days) {
+    const hours = darkHoursHint(day);
+    if (hours === undefined || hours <= 0 || hours >= 12) continue;
+    if (!best || hours > best.hours) best = { day, hours };
+  }
+  return best;
 }
 
 export function validateBundle(json: unknown): TripBundle {

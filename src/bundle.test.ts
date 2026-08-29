@@ -10,6 +10,7 @@ import {
   validateBundle,
   daysList,
   collectionItems,
+  darkestPlausibleNight,
 } from "./bundle.ts";
 
 describe("trip-bundle", () => {
@@ -127,5 +128,25 @@ describe("trip-bundle", () => {
     };
     assert.equal(behaviour.subjects.bighorn.action, "low");
     assert.match(behaviour.subjects.bighorn.detail, /NOT in rut/i);
+  });
+
+  it("prints Lake Isabelle nested AllTrails and agency miles from the engine file", () => {
+    const hike = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Lake Isabelle");
+    assert.ok(hike);
+    const lines = milesLines(hike.raw);
+    assert.ok(lines.some((l) => /AllTrails/i.test(l) && l.includes("6.6")));
+    assert.ok(lines.some((l) => /agency/i.test(l) && l.includes("2")));
+    assert.equal(lines.some((l) => /not in this bundle/i.test(l)), false);
+  });
+
+  it("picks a plausible night length, not wrap-around 24 h driving verdicts", () => {
+    const hit = darkestPlausibleNight(daysList(bundle));
+    assert.ok(hit);
+    assert.ok(hit.hours < 12);
+    assert.notEqual(hit.day.date, "2026-09-29");
+    assert.equal(hit.day.date, "2026-10-05");
+    assert.equal(hit.hours, 6.4);
+    const oct4 = daysList(bundle).find((d) => d.date === "2026-10-04");
+    assert.match(oct4?.light?.moon?.verdict ?? "", /5\.2 h of real darkness/);
   });
 });

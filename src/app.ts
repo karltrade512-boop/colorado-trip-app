@@ -5,6 +5,7 @@ import {
   collection,
   collectionItems,
   collectionNote,
+  darkestPlausibleNight,
   darkHoursHint,
   daysList,
   dogStatus,
@@ -245,7 +246,7 @@ function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""):
   const bannedFold = state.dogsWithUs && dog === "banned";
   const early = earlyCost(item.raw);
   const low = rankGroup(item.raw) === "low";
-  const isFood = extraClass === "food" || "gluten_free" in item.raw || "dairy_free" in item.raw || "gf" in item.raw;
+  const isFood = extraClass === "food";
 
   if (isFood) {
     const diet = gfDf(item.raw);
@@ -276,9 +277,7 @@ function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""):
   const elev = elevationLine(item.raw);
   const permit = permitOf(item.raw);
   const disagreement = str(item.raw.disagreement);
-  const secondary = miles.length
-    ? miles.map((m) => `<span>${esc(m)}</span>`).join("<br>")
-    : "Miles/length not in this bundle. AllTrails and agency print separately when present.";
+  const secondary = miles.length ? miles.map((m) => `<span>${esc(m)}</span>`).join("<br>") : "";
   const extras: string[] = [];
   if (atUrl) extras.push(`<p><a href="${esc(atUrl)}">AllTrails listing</a></p>`);
   if (coords) extras.push(`<p><a class="btn small" href="${esc(mapsUrl(coords.lat, coords.lon, item.name))}">Open in Maps</a></p>`);
@@ -291,7 +290,7 @@ function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""):
       <h3>${esc(item.name)}</h3>
       <span class="badge quiet dog-${dog}">${esc(dogLabel(item.raw))}</span>
     </div>
-    <p class="lede">${secondary}</p>
+    ${secondary ? `<p class="lede">${secondary}</p>` : ""}
     ${disagreement ? `<p class="whisper">${esc(disagreement)}</p>` : ""}
     ${detailsBlock(
       [
@@ -305,6 +304,16 @@ function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""):
       extras.join(""),
     )}
   </article>`;
+}
+
+function hikeListNotes(items: ReturnType<typeof namedItems>): string {
+  if (!items.length) return "";
+  const anyMiles = items.some((i) => milesLines(i.raw).length > 0);
+  const anyCoords = items.some((i) => itemLatLon(i.raw));
+  const bits: string[] = [];
+  if (!anyMiles) bits.push("AllTrails and agency miles print separately when present — never averaged.");
+  if (!anyCoords) bits.push("Trailhead pins are not in this bundle.");
+  return bits.length ? `<p class="note">${bits.map((b) => esc(b)).join(" ")}</p>` : "";
 }
 
 function emptyOrMissing(kind: "hikes" | "food" | "photo" | "gaps", bundle: TripBundle, label: string): string {
@@ -373,7 +382,8 @@ function renderToday(bundle: TripBundle): string {
     <p class="whisper">${esc(cacheAge(state.loadedAt))} · ${esc(state.source)}${bundle.generated ? ` · bundle ${esc(bundle.generated)}` : ""}</p>
     ${day?.note ? `<details class="fold"><summary>Day note</summary><p>${esc(String(day.note))}</p></details>` : ""}
     <h2>Hikes &amp; photo ops</h2>
-    <p class="note">A menu, not a schedule. Skip all is valid. Hiking nav is AllTrails.</p>
+    <p class="note">A menu, not a schedule. Skip all is valid. Hiking nav is AllTrails, not this app.</p>
+    ${hikeListNotes(items)}
     ${emptyOrMissing("hikes", bundle, "Hikes")}
     ${high.map((i) => itemCard(i)).join("")}
     ${
@@ -385,6 +395,11 @@ function renderToday(bundle: TripBundle): string {
         : ""
     }
     <h2>Food nearby</h2>
+    ${
+      isRecord(collection(bundle, "food")) && str((collection(bundle, "food") as Record<string, unknown>).always_print)
+        ? `<p class="note">${esc(str((collection(bundle, "food") as Record<string, unknown>).always_print)!)}</p>`
+        : ""
+    }
     ${
       food.length
         ? food.map((i) => itemCard(i, "food")).join("")
@@ -411,12 +426,7 @@ function renderToday(bundle: TripBundle): string {
 
 function renderLight(bundle: TripBundle): string {
   const days = daysList(bundle);
-  let darkest: { day: Day; hours: number } | undefined;
-  for (const d of days) {
-    const h = darkHoursHint(d);
-    if (h === undefined) continue;
-    if (!darkest || h > darkest.hours) darkest = { day: d, hours: h };
-  }
+  const darkest = darkestPlausibleNight(days);
   return `<section>
     <h1>Days / light</h1>
     <p class="note">Bundle light only. This app does not recompute sun.</p>
@@ -425,19 +435,23 @@ function renderLight(bundle: TripBundle): string {
         ? `<p class="callout">Darkest night in this file: <strong>${esc(prettyDate(darkest.day.date))} (${esc(darkest.day.date)})</strong> · ${esc(String(darkest.hours))} h</p>`
         : `<p class="gap">Dark-hours figures not complete in this file.</p>`
     }
+    <p class="whisper table-hint">On a phone each day is a card. On a laptop this is a table — swipe if needed.</p>
     <div class="table-wrap"><table class="light-table">
       <thead><tr><th>Date</th><th>Base</th><th>Up / down</th><th>Gold AM</th><th>Gold PM</th><th>Night</th></tr></thead>
       <tbody>
         ${days
           .map((d) => {
             const L = d.light;
+            const night = L?.moon?.verdict;
+            const hours = darkHoursHint(d);
+            const wrap = hours !== undefined && hours >= 12;
             return `<tr>
-              <td>${esc(prettyDate(d.date))}<br><span class="whisper">${esc(d.date)} · ${esc(d.kind ?? "")}</span></td>
-              <td>${esc(d.base ?? d.light_computed_for ?? "—")}</td>
-              <td>${L?.sunrise && L?.sunset ? `${esc(L.sunrise)} / ${esc(L.sunset)}` : `<span class="gap">unknown</span>`}</td>
-              <td>${L?.golden_am?.length ? esc(L.golden_am.join("–")) : `<span class="gap">unknown</span>`}</td>
-              <td>${L?.golden_pm?.length ? esc(L.golden_pm.join("–")) : `<span class="gap">unknown</span>`}</td>
-              <td>${L?.moon?.verdict ? esc(L.moon.verdict) : `<span class="gap">unknown</span>`}</td>
+              <td data-label="Date">${esc(prettyDate(d.date))}<br><span class="whisper">${esc(d.date)} · ${esc(d.kind ?? "")}</span></td>
+              <td data-label="Base">${esc(d.base ?? d.light_computed_for ?? "—")}</td>
+              <td data-label="Up / down">${L?.sunrise && L?.sunset ? `${esc(L.sunrise)} / ${esc(L.sunset)}` : `<span class="unknown">unknown</span>`}</td>
+              <td data-label="Gold AM">${L?.golden_am?.length ? esc(L.golden_am.join("–")) : `<span class="unknown">unknown</span>`}</td>
+              <td data-label="Gold PM">${L?.golden_pm?.length ? esc(L.golden_pm.join("–")) : `<span class="unknown">unknown</span>`}</td>
+              <td data-label="Night">${night ? esc(night) : `<span class="unknown">unknown</span>`}${wrap ? `<span class="whisper"> (wrap-around verdict — not a night length)</span>` : ""}</td>
             </tr>`;
           })
           .join("")}
@@ -454,7 +468,8 @@ function renderFilters(bundle: TripBundle): string {
   const subjects = [...new Set(menuItems(bundle).flatMap((i) => subjectOf(i.raw)))];
   return `<section>
     <h1>Filters</h1>
-    <p class="note">Filters do not pick a winner. Default sort is nearby/GPS when permitted. <code>no_early_mornings</code> is a sort key, not a filter.</p>
+    <p class="note">Filters do not pick a winner. Default sort is nearby/GPS when permitted. <code>no_early_mornings</code> is a sort key, not a filter. Hiking nav is AllTrails, not this app.</p>
+    ${hikeListNotes(items)}
     <form class="filters" data-action="filters">
       <label>Dogs
         <select name="dogs">

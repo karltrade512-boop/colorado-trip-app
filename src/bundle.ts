@@ -260,7 +260,7 @@ function formatDiet(v: unknown, label: string): { line: string; quote?: string; 
   return { line: `${label}: ${String(v)}` };
 }
 
-export function sheetMilesLines(raw: Record<string, unknown>): string[] {
+export function peekMilesLines(raw: Record<string, unknown>): string[] {
   const lines: string[] = [];
   if (isRecord(raw.alltrails)) {
     const rt = num(raw.alltrails.round_trip_mi);
@@ -270,10 +270,177 @@ export function sheetMilesLines(raw: Record<string, unknown>): string[] {
     const ow = num(raw.agency.one_way_mi);
     if (ow !== undefined) lines.push(`agency: ${ow} mi one way`);
   }
+  return lines;
+}
+
+export function sheetMilesLines(raw: Record<string, unknown>): string[] {
+  const lines = peekMilesLines(raw);
   if (raw.each_way_mi !== undefined && raw.each_way_mi !== null && raw.each_way_mi !== "") {
     lines.push(`each way: ${String(raw.each_way_mi)} mi (derived)`);
   }
   return lines;
+}
+
+export function foodAreaServes(bundle: TripBundle, placeArea: string | undefined): string[] {
+  if (!placeArea) return [];
+  const food = collection(bundle, "food");
+  if (isRecord(food) && isRecord(food.areas)) {
+    const block = food.areas[placeArea];
+    if (isRecord(block) && Array.isArray(block.serves)) return block.serves.map(String);
+  }
+  return [placeArea];
+}
+
+export type PlaceCardSections = {
+  why: string[];
+  lookOut: string[];
+  around: string[];
+  details: string[];
+};
+
+function pushLine(lines: string[], v: string | undefined | null): void {
+  const s = v != null ? String(v).trim() : "";
+  if (s && !lines.includes(s)) lines.push(s);
+}
+
+export function dogPrint(raw: Record<string, unknown>): string {
+  const rawDog = raw.dogs ?? raw.dog_rule ?? raw.dogs_allowed;
+  if (typeof rawDog === "string" && rawDog.trim()) {
+    const t = rawDog.trim();
+    return /^dogs\b/i.test(t) ? t : `dogs ${t}`;
+  }
+  const st = dogStatus(raw);
+  if (st === "ok") return "dogs allowed";
+  if (st === "banned") return "dogs prohibited";
+  return "dogs unknown";
+}
+
+export function placeCardSections(item: NamedItem, bundle: TripBundle): PlaceCardSections {
+  const raw = item.raw;
+  const at = isRecord(raw.alltrails) ? raw.alltrails : undefined;
+  const agency = isRecord(raw.agency) ? raw.agency : undefined;
+  const diet = gfDf(raw);
+  const why: string[] = [];
+  const lookOut: string[] = [];
+  const details: string[] = [];
+
+  pushLine(why, areaOf(raw));
+  pushLine(why, str(raw.note));
+  pushLine(why, str(raw.review_summary));
+  pushLine(why, str(raw.wildlife));
+  pushLine(why, str(raw.disagreement));
+  pushLine(why, str(raw.correction));
+  if (at && str(at.difficulty)) pushLine(why, `difficulty ${str(at.difficulty)}`);
+  if (raw.each_way_mi !== undefined && raw.each_way_mi !== null && raw.each_way_mi !== "") {
+    pushLine(why, `each way: ${String(raw.each_way_mi)} mi (derived)`);
+  }
+
+  if ("permit" in raw) pushLine(lookOut, permitPrint(raw));
+  if ("dogs" in raw || "dog_rule" in raw || "dogs_allowed" in raw) pushLine(lookOut, dogPrint(raw));
+  pushLine(lookOut, str(raw.access_risk));
+  if (raw.behind_brainard_gate === true) {
+    pushLine(lookOut, "Behind the Brainard gate.");
+    const gw = gatewayFallback(bundle);
+    if (gw) {
+      const park = str(gw.park_at);
+      const when = str(gw.when);
+      pushLine(lookOut, [when, park ? `Park at ${park}` : undefined].filter(Boolean).join(" "));
+    }
+  } else if (raw.behind_brainard_gate === false) {
+    pushLine(lookOut, "Not behind the Brainard gate.");
+  }
+  const area = areaOf(raw) ?? "";
+  if (/rmnp|rocky mountain/i.test(area)) {
+    for (const p of landPermits(bundle)) {
+      if (!/rocky mountain|rmnp|timed/i.test(`${str(p.match) ?? ""} ${str(p.name) ?? ""}`)) continue;
+      pushLine(lookOut, str(p.name) ?? str(p.match));
+      if (Array.isArray(p.windows)) {
+        for (const w of p.windows) {
+          if (!isRecord(w)) continue;
+          const label = str(w.label) ?? "window";
+          const start = str(w.start) ?? "?";
+          const end = str(w.end) ?? "?";
+          const to = str(w.to) ?? "";
+          pushLine(lookOut, `${label}: ${start}–${end}${to ? ` through ${to}` : ""}`);
+        }
+      }
+    }
+  }
+  const nameLc = item.name.toLowerCase();
+  for (const ex of landNamedExceptions(bundle)) {
+    const match = str(ex.match) ?? str(ex.name);
+    if (match && nameLc.includes(match.toLowerCase())) {
+      pushLine(lookOut, `${match} · ${str(ex.dogs) ?? "named exception"}`);
+    }
+  }
+  const foodMeta = collection(bundle, "food");
+  const always = isRecord(foodMeta) ? str(foodMeta.always_print) : undefined;
+  if (str(raw.address) || str(raw.kind) || diet.gfQuote || diet.dfQuote) {
+    pushLine(lookOut, always);
+  }
+  if (diet.gfQuote) pushLine(lookOut, `GF: “${diet.gfQuote}”`);
+  if (diet.dfQuote) pushLine(lookOut, `DF: “${diet.dfQuote}”`);
+
+  pushLine(details, str(raw.trailhead) ? `trailhead ${str(raw.trailhead)}` : undefined);
+  for (const g of gainLines(raw)) pushLine(details, g);
+  if (at && num(at.duration_min) !== undefined) {
+    pushLine(details, `AllTrails duration ${num(at.duration_min)} min`);
+  }
+  if (at && str(at.route_type)) pushLine(details, `route ${str(at.route_type)}`);
+  if (at && num(at.rating) !== undefined) pushLine(details, `AllTrails rating ${num(at.rating)}`);
+  if (agency && str(agency.url)) pushLine(details, `Agency page ${str(agency.url)}`);
+  if (agency && str(agency.note)) pushLine(details, str(agency.note));
+  pushLine(details, str(raw.address));
+  if (str(raw.elevation_display)) pushLine(details, str(raw.elevation_display));
+  if (str(raw.fetched)) pushLine(details, `fetched-at ${str(raw.fetched)}`);
+  if (str(raw.source) && /^https?:\/\//i.test(str(raw.source)!)) {
+    pushLine(details, `Source ${str(raw.source)}`);
+  }
+  if (raw.osm_routed_each_way_mi !== undefined && raw.osm_routed_each_way_mi !== null && raw.osm_routed_each_way_mi !== "") {
+    pushLine(details, `OSM routed ${String(raw.osm_routed_each_way_mi)} mi each way (third measure, not averaged)`);
+  }
+  const serves = servesOf(raw);
+  if (serves.length) {
+    pushLine(details, `serves ${serves.map((id) => placeById(bundle, id)?.name ?? id).join(" · ")}`);
+  }
+
+  const around = aroundThisNames(item, bundle);
+  return {
+    why: why.length ? why : ["No why-go text in this bundle."],
+    lookOut: lookOut.length ? lookOut : ["Look out for: not in this bundle."],
+    around: around.length ? around : ["Around this: not in this bundle."],
+    details: details.length ? details : ["Details: not in this bundle."],
+  };
+}
+
+export function aroundThisNames(item: NamedItem, bundle: TripBundle): string[] {
+  const names: string[] = [];
+  const area = areaOf(item.raw);
+  const serves = new Set(servesOf(item.raw));
+  const foodServes = foodAreaServes(bundle, area);
+  for (const s of foodServes) if (s !== area) serves.add(s);
+  const pool = [
+    ...collectionItems(bundle, "hikes", "hike"),
+    ...collectionItems(bundle, "food", "food"),
+    ...collectionItems(bundle, "photo", "photo"),
+  ];
+  for (const other of pool) {
+    if (other.name === item.name) continue;
+    const oa = areaOf(other.raw);
+    const os = servesOf(other.raw);
+    const otherFoodServes = foodAreaServes(bundle, oa);
+    const areaHit = Boolean(area && oa && area.toLowerCase() === oa.toLowerCase());
+    const serveHit =
+      os.some((s) => serves.has(s)) ||
+      otherFoodServes.some((s) => serves.has(s)) ||
+      (area ? otherFoodServes.includes(area) : false);
+    if (areaHit || serveHit) pushLine(names, other.name);
+  }
+  const drakeSide = serves.has("drake") || /drake/i.test(item.name) || item.id === "drake";
+  if (drakeSide || /elk|photo/i.test(item.name) || item.id.startsWith("photo")) {
+    for (const p of behaviourSubject(bundle, "elk")?.places ?? []) pushLine(names, p);
+  }
+  return names;
 }
 
 export function gainLines(raw: Record<string, unknown>): string[] {

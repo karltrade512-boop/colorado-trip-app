@@ -338,8 +338,8 @@ main { padding: 4px var(--pad-r) 40px var(--pad); }
   font-size: 1.05rem;
 }
 .linkish.on { color: var(--accent); }
-.fold, .more-facts, .quote { margin: 10px 0 0; }
-.fold summary, .more-facts summary, .quote summary {
+.fold, .more-facts, .quote, .card-fold { margin: 10px 0 0; }
+.fold summary, .more-facts summary, .quote summary, .card-fold summary {
   cursor: pointer;
   font-weight: 650;
   padding: 8px 0;
@@ -347,9 +347,25 @@ main { padding: 4px var(--pad-r) 40px var(--pad); }
   font-size: 0.92rem;
   list-style: none;
 }
+.card-fold summary {
+  color: var(--fg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+  border-top: 1px solid var(--line);
+}
+.card-fold summary::after {
+  content: "▸";
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+.card-fold[open] summary::after { content: "▾"; }
+.card-fold p { font-size: 0.95rem; margin: 0.25rem 0; }
 .fold summary::-webkit-details-marker,
 .more-facts summary::-webkit-details-marker,
-.quote summary::-webkit-details-marker { display: none; }
+.quote summary::-webkit-details-marker,
+.card-fold summary::-webkit-details-marker { display: none; }
 .more-facts p { font-size: 0.95rem; }
 .more-facts .k { color: var(--muted); font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
 img { max-width: 100%; border-radius: 10px; }
@@ -405,6 +421,7 @@ img.webcam {
   border-bottom: 1px solid var(--line);
 }
 #color-map { min-height: 260px; }
+.leaflet-popup-content { min-width: 220px; max-width: 280px; }
 body.printing .tabbar, body.printing .top { display: none; }
 body.printing { padding: 0; }
 @media print {

@@ -30,6 +30,7 @@ import {
   landNamedExceptions,
   permitPrint,
   sheetMilesLines,
+  placeCardSections,
 } from "./bundle.ts";
 import { osmExtraExcluded } from "./live.ts";
 
@@ -290,5 +291,37 @@ describe("trip-bundle", () => {
     const unknownDf = items.filter((i) => /unknown/i.test(gfDf(i.raw).df));
     assert.ok(unknownDf.length > 0);
     assert.ok(unknownDf.some((i) => i.name === "The Country Market of Estes Park"));
+  });
+
+  it("prints Bluebird why / look-out from the engine record, not a blank More", () => {
+    const hike = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Bluebird Lake");
+    assert.ok(hike);
+    const sec = placeCardSections(hike, bundle);
+    const why = sec.why.join("\n");
+    const look = sec.lookOut.join("\n");
+    const all = [...sec.why, ...sec.lookOut, ...sec.around, ...sec.details].join("\n");
+    assert.match(why, /Wild Basin/);
+    assert.match(why, /beyond|stated range/i);
+    assert.match(why, /13\.6 vs NPS 12\.0/);
+    assert.match(look, /timed entry/i);
+    assert.match(look, /dogs prohibited/i);
+    assert.match(all, /disagreement|13\.6 vs/i);
+    assert.equal(sec.why.includes("No why-go text in this bundle."), false);
+    assert.ok(sec.around.includes("Ouzel Lake"));
+  });
+
+  it("prints Lost Lake why from wildlife or review_summary", () => {
+    const hike = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Lost Lake (Hessie)");
+    assert.ok(hike);
+    const why = placeCardSections(hike, bundle).why.join("\n");
+    assert.match(why, /Moose and brook trout|Beautiful views, a lovely lake/i);
+  });
+
+  it("prints Country Market address in look-out or details", () => {
+    const place = collectionItems(bundle, "food", "food").find((p) => p.name === "The Country Market of Estes Park");
+    assert.ok(place);
+    const sec = placeCardSections(place, bundle);
+    const blob = [...sec.lookOut, ...sec.details].join("\n");
+    assert.match(blob, /900 Moraine Ave/);
   });
 });

@@ -31,6 +31,15 @@ import {
   permitPrint,
   sheetMilesLines,
   placeCardSections,
+  placeAbout,
+  wikiTitleCandidates,
+  bundleImage,
+  judgeFallPhoto,
+  matchingFallWebcam,
+  NO_FALL_PHOTO_LABEL,
+  placePhotoDecision,
+  commonsSearchQueries,
+  commonsCandidateOk,
 } from "./bundle.ts";
 import { osmExtraExcluded } from "./live.ts";
 
@@ -308,6 +317,138 @@ describe("trip-bundle", () => {
     assert.match(all, /disagreement|13\.6 vs/i);
     assert.equal(sec.why.includes("No why-go text in this bundle."), false);
     assert.ok(sec.around.includes("Ouzel Lake"));
+    assert.ok(sec.details.includes("no pin in this bundle"));
+    const about = placeAbout(hike);
+    assert.ok(about.some((l) => /Wild Basin/.test(l)));
+    assert.ok(about.some((l) => /beyond|stated range/i.test(l)));
+    assert.ok(about.some((l) => /13\.6 vs NPS 12\.0/.test(l)));
+  });
+
+  it("builds Wikipedia title candidates without a network fetch", () => {
+    const isabelle = wikiTitleCandidates("Lake Isabelle", "Indian Peaks / Brainard");
+    assert.ok(isabelle.includes("Lake Isabelle"));
+    assert.ok(isabelle.includes("Lake Isabelle (Colorado)"));
+    const bluebird = wikiTitleCandidates("Bluebird Lake", "RMNP / Wild Basin");
+    assert.ok(bluebird.includes("Bluebird Lake (Colorado)"));
+    assert.ok(bluebird.includes("Bluebird Lake (Rocky Mountain National Park)"));
+    const loch = wikiTitleCandidates("The Loch", "RMNP");
+    assert.ok(loch.includes("The Loch (Rocky Mountain National Park)"));
+    assert.equal(bundleImage({}), undefined);
+    assert.equal(bundleImage({ image: "https://example.com/x.jpg", photo: null })?.url, "https://example.com/x.jpg");
+    assert.equal(judgeFallPhoto({ title: "Wikipedia thumb", description: "https://upload.wikimedia.org/x.jpg" }).ok, false);
+  });
+
+  it("accepts only Sep/Oct or explicit autumn tags for place photos", () => {
+    const oct = judgeFallPhoto({ dateText: "2019-10-12 08:11:00" });
+    assert.equal(oct.ok, true);
+    if (oct.ok) assert.match(oct.why, /Oct 2019/);
+    assert.equal(judgeFallPhoto({ dateText: "2019-01-12" }).ok, false);
+    const janAspen = judgeFallPhoto({ dateText: "2019-01-12", description: "aspen gold on the ridge" });
+    assert.equal(janAspen.ok, true);
+    const tagged = judgeFallPhoto({ categories: "Autumn in Colorado; Aspen" });
+    assert.equal(tagged.ok, true);
+    if (tagged.ok) assert.equal(tagged.why, "tagged autumn");
+    assert.equal(judgeFallPhoto({ description: "snow and ski tour" }).ok, false);
+    assert.equal(judgeFallPhoto({ dateText: "2019-07-04" }).ok, false);
+    assert.equal(judgeFallPhoto({}).ok, false);
+    assert.equal(judgeFallPhoto({ title: "Fall River Entrance" }).ok, false);
+    assert.equal(judgeFallPhoto({ title: "Gold Hill overlook" }).ok, false);
+    const cams = [
+      { name: "Alpine Visitor Center", url: "https://example.com/avc.jpg" },
+      { name: "Glacier Basin", url: "https://example.com/gb.jpg" },
+      { name: "Longs Peak", url: "https://example.com/lp.jpg" },
+    ];
+    assert.equal(matchingFallWebcam({ name: "Bluebird Lake", area: "RMNP / Wild Basin" }, cams), undefined);
+    assert.equal(matchingFallWebcam({ name: "Chasm Lake", trailhead: "Longs Peak Ranger Station" }, cams)?.name, "Longs Peak");
+    assert.equal(matchingFallWebcam({ name: "The Loch", extra: "The Loch via Glacier Gorge Trail" }, cams)?.name, "Glacier Basin");
+  });
+
+  it("renders a hike without a qualifying photo and never uses a bare Wikipedia thumb", () => {
+    const hike = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Bluebird Lake");
+    assert.ok(hike);
+    assert.equal(bundleImage(hike.raw), undefined);
+    assert.equal(placePhotoDecision(hike.raw, hike.id).kind, "lookup");
+    assert.equal(NO_FALL_PHOTO_LABEL, "No fall photo in this bundle");
+    const about = placeCardSections(hike, bundle).about;
+    assert.ok(about.length > 0);
+    const wikiOnly = {
+      image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Bluebird.jpg/800px-Bluebird.jpg",
+      alltrails: { name: "Bluebird Lake" },
+    };
+    assert.equal(placePhotoDecision(wikiOnly, "hike-bluebird").kind, "lookup");
+    assert.equal(
+      judgeFallPhoto({ title: "thumbnail", description: wikiOnly.image }).ok,
+      false,
+    );
+    const food = collectionItems(bundle, "food", "food").find((p) => p.name === "The Country Market of Estes Park");
+    assert.ok(food);
+    assert.equal(placePhotoDecision(food.raw, food.id).kind, "none");
+    const queries = commonsSearchQueries("Bluebird Lake", "RMNP / Wild Basin");
+    assert.ok(queries.every((q) => q.includes("filetype:bitmap")));
+    assert.equal(
+      commonsCandidateOk({
+        mime: "application/pdf",
+        title: "File:Evenings with Colorado poets.pdf",
+        description: "autumn in Colorado",
+        placeName: "Bluebird Lake",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "Bear Lake - Lake Helene trail map (just off the map)",
+        description: "2013-09-02",
+        placeName: "Lake Helene",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "Golden-mantled Ground Squirrel CO",
+        description: "Photo taken near Lake Isabelle in the Indian Peaks Wilderness",
+        categories: "Indian Peaks Wilderness; September 2006 in Colorado",
+        placeName: "Lake Isabelle",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "HELENE LAKE, ROCKY MOUNTAIN NATIONAL PARK",
+        description: "3.1 miles from Bear Lake",
+        placeName: "Lake Helene",
+      }),
+      true,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "WHCPA Pioneer Museum in Long Lake, MN",
+        description: "Picture taken from behind includes the Carriage House.",
+        placeName: "Long Lake",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "Entrance to Mitchell Lake - panoramio.jpg",
+        description: "Entrance to Mitchell Lake",
+        placeName: "Mitchell Lake",
+      }),
+      false,
+    );
+    assert.equal(
+      commonsCandidateOk({
+        mime: "image/jpeg",
+        title: "Blue Lake (Huerfano County, Colorado)",
+        description: "San Isabel National Forest near Cuchara",
+        placeName: "Blue Lake",
+      }),
+      false,
+    );
   });
 
   it("prints Lost Lake why from wildlife or review_summary", () => {

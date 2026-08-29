@@ -292,11 +292,265 @@ export function foodAreaServes(bundle: TripBundle, placeArea: string | undefined
 }
 
 export type PlaceCardSections = {
+  about: string[];
   why: string[];
   lookOut: string[];
   around: string[];
   details: string[];
 };
+
+export function bundleImage(raw: Record<string, unknown>): { url: string; label: string } | undefined {
+  const asUrl = (v: unknown): string | undefined => {
+    if (typeof v === "string" && /^https?:\/\//i.test(v)) {
+      if (/\.(jpe?g|png|webp|gif)(\?|#|$)/i.test(v) || /\/wikipedia\/commons\//i.test(v)) return v;
+    }
+    if (isRecord(v)) return asUrl(v.url) ?? asUrl(v.href) ?? asUrl(v.src) ?? asUrl(v.image);
+    return undefined;
+  };
+  for (const k of ["image", "photo", "thumbnail", "img", "image_url", "photo_url"]) {
+    const url = asUrl(raw[k]);
+    if (!url) continue;
+    const rec = isRecord(raw[k]) ? raw[k] : undefined;
+    const label = rec ? str(rec.source) ?? str(rec.credit) ?? str(rec.label) ?? k : k;
+    return { url, label };
+  }
+  return undefined;
+}
+
+export type FallPhotoInput = {
+  dateText?: string;
+  title?: string;
+  description?: string;
+  categories?: string;
+};
+
+export type FallPhotoVerdict = { ok: true; why: string } | { ok: false; why: string };
+
+const MONTHS: Record<string, number> = {
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+  jan: 1, feb: 2, mar: 3, apr: 4, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12,
+};
+
+const MONTH_SHORT = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function parsePhotoMonthYear(text: string | undefined): { month: number; year?: number } | undefined {
+  if (!text) return undefined;
+  const iso = text.match(/(\d{4})[-:](\d{2})[-:](\d{2})/);
+  if (iso) return { year: Number(iso[1]), month: Number(iso[2]) };
+  const named = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec)\b\.?\s+(\d{4})/i);
+  if (named) {
+    const month = MONTHS[named[1].toLowerCase()];
+    if (month) return { month, year: Number(named[2]) };
+  }
+  const named2 = text.match(/(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec)\b\.?\s+(\d{4})/i);
+  if (named2) {
+    const month = MONTHS[named2[2].toLowerCase()];
+    if (month) return { month, year: Number(named2[3]) };
+  }
+  return undefined;
+}
+
+export const NO_FALL_PHOTO_LABEL = "No fall photo in this bundle";
+
+/** Season tags only. "Fall River" is a place name, not autumn. Bare "gold" is not enough. */
+export function fallPhotoTextSignals(text: string): { fallTagged: boolean; aspenGold: boolean; winterish: boolean } {
+  const fallTagged =
+    /\b(autumn|foliage|aspen)\b/i.test(text) ||
+    /\bfall\b(?!\s+river)/i.test(text) ||
+    /\bgold(?:en)?\s+(aspen|leaves|larch|colou?rs?|foliage)\b/i.test(text) ||
+    /\b(aspen|leaves|larch|colou?rs?|foliage)\s+gold(?:en)?\b/i.test(text);
+  const aspenGold =
+    (/\baspen\b/i.test(text) && /\b(gold|golden|autumn|foliage)\b/i.test(text)) ||
+    (/\baspen\b/i.test(text) && /\bfall\b(?!\s+river)/i.test(text));
+  const winterish = /\b(snow|ski(?:ing)?|ice|winter|blizzard|frozen)\b/i.test(text);
+  return { fallTagged, aspenGold, winterish };
+}
+
+export function judgeFallPhoto(input: FallPhotoInput): FallPhotoVerdict {
+  const text = [input.title, input.description, input.categories].filter(Boolean).join(" ");
+  const { fallTagged, aspenGold, winterish } = fallPhotoTextSignals(text);
+  const dt = parsePhotoMonthYear(input.dateText) ?? parsePhotoMonthYear(text);
+  if (dt) {
+    const stamp = `${MONTH_SHORT[dt.month]}${dt.year ? ` ${dt.year}` : ""}`;
+    if (dt.month >= 1 && dt.month <= 4) {
+      if (aspenGold) return { ok: true, why: `tagged aspen gold · ${stamp}` };
+      return { ok: false, why: "winter/spring date" };
+    }
+    if (dt.month === 9 || dt.month === 10) {
+      if (winterish && !fallTagged && !aspenGold) return { ok: false, why: "snow/winter in description" };
+      return { ok: true, why: stamp };
+    }
+    if (fallTagged || aspenGold) {
+      if (winterish && !aspenGold) return { ok: false, why: "winter tags" };
+      return { ok: true, why: "tagged autumn" };
+    }
+    return { ok: false, why: "season not fall" };
+  }
+  if (winterish && !aspenGold) return { ok: false, why: "winter tags" };
+  if (fallTagged || aspenGold) return { ok: true, why: "tagged autumn" };
+  return { ok: false, why: "date unknown" };
+}
+
+export type WebcamHint = { name: string; url: string; note?: string };
+
+export function matchingFallWebcam(
+  place: { name: string; area?: string; trailhead?: string; extra?: string },
+  cams: WebcamHint[],
+): WebcamHint | undefined {
+  const hay = [place.name, place.area, place.trailhead, place.extra].filter(Boolean).join(" ").toLowerCase();
+  for (const cam of cams) {
+    const n = cam.name.toLowerCase();
+    if (n.includes("alpine visitor")) {
+      if (/alpine visitor|trail ridge/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("glacier basin")) {
+      if (/glacier basin|glacier gorge/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("longs peak")) {
+      if (/longs peak/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("fall river")) {
+      if (/fall river/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("beaver meadows")) {
+      if (/beaver meadows/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("kawuneeche") || /harbison/i.test(cam.note ?? "")) {
+      if (/kawuneeche|harbison/.test(hay)) return cam;
+      continue;
+    }
+    if (n.includes("grand lake")) {
+      if (/grand lake/.test(hay)) return cam;
+    }
+  }
+  return undefined;
+}
+
+export function commonsSearchQueries(name: string, area?: string): string[] {
+  const titles = wikiTitleCandidates(name, area).slice(0, 3);
+  const q: string[] = [];
+  for (const t of titles) {
+    q.push(`"${t}" filetype:bitmap`);
+    q.push(`${t} Colorado filetype:bitmap`);
+  }
+  return q.slice(0, 6);
+}
+
+const WEAK_PLACE = /^(lake|lakes|peak|peaks|mount|mountain|creek|river|trail|falls|pond|pass|ridge)$/i;
+
+export function photoMentionsPlace(placeName: string, hay: string): boolean {
+  const bare = placeName.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+  const tokens = bare.split(/\s+/).filter((t) => t.length >= 3 && !/^(the|and|via|for|from)$/i.test(t));
+  const strong = tokens.filter((t) => !WEAK_PLACE.test(t));
+  const blob = hay.toLowerCase();
+  if (!strong.length) return blob.includes(bare.toLowerCase());
+  return strong.every((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(hay));
+}
+
+const TRIP_AREA =
+  /\b(brainard|indian peaks|rocky mountain|rmnp|wild basin|nederland|front range|roosevelt national|estes|allenspark|hessie|longs peak|glacier gorge|bear lake|pawnee|arapaho|jean lunning)\b/i;
+const ELSEWHERE =
+  /\b(minnesota|ontario|texas|oregon|california|florida|illinois|idaho|wisconsin|michigan|new zealand|croatia|san antonio|hennepin|huerfano|cuchara|audubon center|pioneer museum|umpqua|crater lake|mount cook|aoraki|kahurangi|humboldt)\b/i;
+const GENERIC_LAKE = /^(blue lake|long lake|mitchell lake|diamond lake|columbine lake)$/i;
+
+export function commonsCandidateOk(input: {
+  mime?: string;
+  title?: string;
+  description?: string;
+  categories?: string;
+  placeName: string;
+}): boolean {
+  const mime = (input.mime ?? "").toLowerCase();
+  const title = input.title ?? "";
+  const description = input.description ?? "";
+  const hay = `${title} ${description} ${input.categories ?? ""}`;
+  if (!mime.startsWith("image/") || mime.includes("svg")) return false;
+  if (/\.pdf$/i.test(title) || /\bpdf\b/i.test(title)) return false;
+  if (/\b(trail[- ]map|just off the map|ecoregion|master plan|catalogue|catalog|HAER|atlas|DPLA)\b/i.test(hay)) return false;
+  if (ELSEWHERE.test(hay) && !TRIP_AREA.test(hay)) return false;
+  if (!photoMentionsPlace(input.placeName, title)) return false;
+  const bare = input.placeName.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+  if (GENERIC_LAKE.test(bare)) return TRIP_AREA.test(hay);
+  return TRIP_AREA.test(hay) || /\bcolorado\b/i.test(hay);
+}
+
+export function wikiTitleCandidates(name: string, area?: string): string[] {
+  const titles: string[] = [];
+  const push = (t: string) => {
+    const s = t.replace(/\s+/g, " ").trim();
+    if (s && !titles.includes(s)) titles.push(s);
+  };
+  const bare = name
+    .replace(/\s*\([^)]*\)\s*/g, " ")
+    .replace(/\s*\/\s*.+$/, "")
+    .replace(/\s*\+\s*.+$/, "")
+    .trim();
+  push(name);
+  push(bare);
+  push(`${bare} (Colorado)`);
+  push(`${bare} Colorado`);
+  if (area && /rmnp|rocky mountain|wild basin|glacier|bear lake|longs/i.test(area)) {
+    push(`${bare} (Rocky Mountain National Park)`);
+    push(`${bare}, Rocky Mountain National Park`);
+  }
+  if (area && /brainard|indian peaks/i.test(area)) {
+    push(`${bare} (Indian Peaks)`);
+    push(`${bare} Brainard`);
+  }
+  if (/hessie/i.test(name)) push("Lost Lake (Colorado)");
+  if (/the loch/i.test(name)) push("The Loch (Rocky Mountain National Park)");
+  return titles;
+}
+
+export type PlacePhotoDecision =
+  | { kind: "bundle"; url: string; label: string; why: string }
+  | { kind: "lookup" }
+  | { kind: "none" };
+
+/** Bundle URL is shown only if judgeFallPhoto passes. No Wikipedia thumb by itself. */
+export function placePhotoDecision(raw: Record<string, unknown>, id: string): PlacePhotoDecision {
+  const bundled = bundleImage(raw);
+  if (bundled) {
+    const rec = isRecord(raw.image) ? raw.image : isRecord(raw.photo) ? raw.photo : undefined;
+    const verdict = judgeFallPhoto({
+      title: bundled.label,
+      description: [bundled.url, str(rec?.description)].filter(Boolean).join(" "),
+      dateText: rec ? str(rec.datetime_original ?? rec.date ?? rec.taken) : undefined,
+      categories: str(rec?.categories),
+    });
+    if (verdict.ok) return { kind: "bundle", url: bundled.url, label: bundled.label, why: verdict.why };
+  }
+  if (str(raw.trailhead) || isRecord(raw.alltrails) || id.startsWith("photo-")) return { kind: "lookup" };
+  return { kind: "none" };
+}
+
+export function placeAbout(item: NamedItem): string[] {
+  const raw = item.raw;
+  const at = isRecord(raw.alltrails) ? raw.alltrails : undefined;
+  const stats: string[] = [];
+  const prose: string[] = [];
+  pushLine(stats, areaOf(raw));
+  pushLine(stats, str(raw.trailhead) ? `trailhead ${str(raw.trailhead)}` : undefined);
+  if (at && str(at.difficulty)) pushLine(stats, `difficulty ${str(at.difficulty)}`);
+  if (at && num(at.duration_min) !== undefined) pushLine(stats, `AllTrails duration ${num(at.duration_min)} min`);
+  for (const g of gainLines(raw)) pushLine(stats, g);
+  if (at && str(at.route_type)) pushLine(stats, `route ${str(at.route_type)}`);
+  if (at && num(at.rating) !== undefined) pushLine(stats, `AllTrails rating ${num(at.rating)}`);
+  pushLine(stats, str(raw.kind));
+  pushLine(stats, str(raw.address));
+  pushLine(prose, str(raw.note));
+  pushLine(prose, str(raw.review_summary));
+  pushLine(prose, str(raw.wildlife));
+  pushLine(prose, str(raw.disagreement));
+  if (!prose.length) pushLine(prose, "No writeup in this bundle.");
+  return [...stats, ...prose];
+}
 
 function pushLine(lines: string[], v: string | undefined | null): void {
   const s = v != null ? String(v).trim() : "";
@@ -381,6 +635,9 @@ export function placeCardSections(item: NamedItem, bundle: TripBundle): PlaceCar
   if (diet.gfQuote) pushLine(lookOut, `GF: “${diet.gfQuote}”`);
   if (diet.dfQuote) pushLine(lookOut, `DF: “${diet.dfQuote}”`);
 
+  if ((str(raw.trailhead) || isRecord(raw.alltrails)) && !itemLatLon(raw)) {
+    pushLine(details, "no pin in this bundle");
+  }
   pushLine(details, str(raw.trailhead) ? `trailhead ${str(raw.trailhead)}` : undefined);
   for (const g of gainLines(raw)) pushLine(details, g);
   if (at && num(at.duration_min) !== undefined) {
@@ -406,6 +663,7 @@ export function placeCardSections(item: NamedItem, bundle: TripBundle): PlaceCar
 
   const around = aroundThisNames(item, bundle);
   return {
+    about: placeAbout(item),
     why: why.length ? why : ["No why-go text in this bundle."],
     lookOut: lookOut.length ? lookOut : ["Look out for: not in this bundle."],
     around: around.length ? around : ["Around this: not in this bundle."],

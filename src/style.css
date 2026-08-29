@@ -362,6 +362,53 @@ main { padding: 4px var(--pad-r) 40px var(--pad); }
 }
 .card-fold[open] summary::after { content: "▾"; }
 .card-fold p { font-size: 0.95rem; margin: 0.25rem 0; }
+.place-photo {
+  margin: 0 0 10px;
+  background: color-mix(in srgb, var(--line) 35%, var(--card));
+  border-radius: 12px;
+  overflow: hidden;
+}
+.place-photo img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+.place-photo figcaption {
+  display: block;
+  padding: 6px 10px 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.place-photo.none,
+.place-photo.waiting {
+  min-height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed color-mix(in srgb, var(--muted) 45%, var(--line));
+}
+.place-photo .photo-empty {
+  margin: 0;
+  padding: 18px 14px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--fg);
+}
+.place-photo.none.quiet {
+  min-height: 0;
+  border: none;
+  justify-content: flex-start;
+  background: transparent;
+}
+.place-photo.none.quiet .photo-empty {
+  padding: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: left;
+}
 .fold summary::-webkit-details-marker,
 .more-facts summary::-webkit-details-marker,
 .quote summary::-webkit-details-marker,

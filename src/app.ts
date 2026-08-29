@@ -25,7 +25,10 @@ import {
   foodAreaServes,
   foodDirectories,
   peekMilesLines,
+  NO_FALL_PHOTO_LABEL,
+  placeAbout,
   placeCardSections,
+  placePhotoDecision,
   gatewayFallback,
   gfDf,
   isRecord,
@@ -57,6 +60,7 @@ import {
 import { idbGet, idbSet, type CachedBundle } from "./db";
 import { haversineKm, isStandalone, mapsSearchUrl, mapsUrl } from "./geo";
 import { bundleLiveTargets, fetchLive, fetchUnverifiedExtras } from "./live";
+import { hydratePlacePhotos } from "./wiki";
 
 export type RouteId =
   | "today"
@@ -391,7 +395,7 @@ function constraintPills(item: ReturnType<typeof namedItems>[number], isFood: bo
   return pills.length ? `<p class="pills">${pills.join("")}</p>` : "";
 }
 
-function foldSection(title: string, lines: string[]): string {
+function foldSection(title: string, lines: string[], open = false): string {
   const body = lines
     .map((line) => {
       const m = /^(Agency page)\s+(https?:\/\/\S+)$/.exec(line);
@@ -401,12 +405,31 @@ function foldSection(title: string, lines: string[]): string {
       return `<p>${esc(line)}</p>`;
     })
     .join("");
-  return `<details class="card-fold"><summary>${esc(title)}</summary>${body}</details>`;
+  return `<details class="card-fold"${open ? " open" : ""}><summary>${esc(title)}</summary>${body}</details>`;
 }
 
 function cardFolds(item: ReturnType<typeof namedItems>[number], bundle: TripBundle): string {
   const s = placeCardSections(item, bundle);
-  return `${foldSection("Why / why not", s.why)}${foldSection("Look out for", s.lookOut)}${foldSection("Around this", s.around)}${foldSection("Details", s.details)}`;
+  const about = s.about.length ? s.about : placeAbout(item);
+  return `${foldSection("About", about, true)}${foldSection("Why / why not", s.why)}${foldSection("Look out for", s.lookOut)}${foldSection("Around this", s.around)}${foldSection("Details", s.details)}`;
+}
+
+function photoPeek(item: ReturnType<typeof namedItems>[number], isFood = false): string {
+  const slot = placePhotoDecision(item.raw, item.id);
+  if (slot.kind === "bundle") {
+    return `<figure class="place-photo">
+        <img src="${esc(slot.url)}" alt="${esc(item.name)}" />
+        <figcaption>${esc(slot.label)} · ${esc(slot.why)}</figcaption>
+      </figure>`;
+  }
+  if (slot.kind === "none") {
+    const quiet = isFood ? " quiet" : "";
+    return `<figure class="place-photo none${quiet}"><p class="photo-empty">${esc(NO_FALL_PHOTO_LABEL)}</p></figure>`;
+  }
+  const extra = isRecord(item.raw.alltrails) ? str(item.raw.alltrails.name) ?? "" : "";
+  return `<figure class="place-photo waiting" data-photo-name="${esc(item.name)}" data-photo-area="${esc(areaOf(item.raw) ?? "")}" data-photo-trail="${esc(str(item.raw.trailhead) ?? "")}" data-photo-extra="${esc(extra)}">
+    <p class="photo-empty">${esc(NO_FALL_PHOTO_LABEL)}</p>
+  </figure>`;
 }
 
 function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""): string {
@@ -425,6 +448,7 @@ function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""):
       })();
 
   return `<article class="card sheet ${bannedFold ? "folded-dogs" : ""}" data-id="${esc(item.id)}">
+    ${photoPeek(item, isFood)}
     <h3>${esc(item.name)}</h3>
     ${constraintPills(item, isFood)}
     ${peekFact}
@@ -456,7 +480,7 @@ function collapsedCards(
   const foldedHtml = folded.map((i) => itemCard(i, extraClass)).join("");
   const noun = foldId === "food" ? "places" : "hikes";
   if (main.length <= preview) {
-    return `${inAreaNoteFor(extraClass)}${main.map((i) => itemCard(i, extraClass)).join("")}${foldedHtml}`;
+    return `${main.map((i) => itemCard(i, extraClass)).join("")}${foldedHtml}`;
   }
   const head = main.slice(0, preview);
   const rest = main.slice(preview);
@@ -464,21 +488,12 @@ function collapsedCards(
     extraClass === "food"
       ? rest.map((i) => itemCard(i, extraClass)).join("")
       : groupedBlocks(rest, (it) => itemCard(it, extraClass), AREA_ORDER);
-  return `${inAreaNoteFor(extraClass)}${head.map((i) => itemCard(i, extraClass)).join("")}
+  return `${head.map((i) => itemCard(i, extraClass)).join("")}
     <details class="fold show-all" data-fold="${foldId}" ${open ? "open" : ""}>
       <summary>${items.length} ${noun} — show all</summary>
       ${restHtml}
     </details>
     ${foldedHtml}`;
-}
-
-function inAreaNoteFor(extraClass: string): string {
-  if (!state.bundle) return "";
-  const where = currentCabin(state.bundle) === "nederland" ? "Nederland" : "Drake";
-  if (extraClass === "food") {
-    return `<p class="whisper">Food in this area (${esc(where)}). Untagged places stay listed.</p>`;
-  }
-  return `<p class="whisper">In this area first (${esc(where)}). Not a schedule.</p>`;
 }
 
 function areaGroupKey(raw: Record<string, unknown>, kind: "hike" | "food"): string {
@@ -525,15 +540,6 @@ function groupedByArea(items: ReturnType<typeof namedItems>, extraClass = ""): s
   return groupedBlocks(items, (it) => itemCard(it, extraClass), AREA_ORDER);
 }
 
-function hikeListNotes(items: ReturnType<typeof namedItems>): string {
-  if (!items.length) return "";
-  const anyMiles = items.some((i) => sheetMilesLines(i.raw).length > 0);
-  const anyCoords = items.some((i) => itemLatLon(i.raw));
-  const bits: string[] = [];
-  if (!anyMiles) bits.push("AllTrails and agency miles print separately when present — never averaged.");
-  if (!anyCoords) bits.push("Trailhead pins are not in this bundle.");
-  return bits.length ? `<p class="note">${bits.map((b) => esc(b)).join(" ")}</p>` : "";
-}
 
 function emptyOrMissing(kind: "hikes" | "food" | "photo" | "gaps", bundle: TripBundle, label: string): string {
   const col = collection(bundle, kind);
@@ -704,8 +710,7 @@ function dietChipBar(): string {
   return `<p class="pills diet-chips" role="group" aria-label="Diet chips">
     <button type="button" class="pill ${state.foodGf ? "on" : ""}" data-action="diet" data-diet="gf">GF</button>
     <button type="button" class="pill ${state.foodDf ? "on" : ""}" data-action="diet" data-diet="df">DF</button>
-  </p>
-  <p class="whisper">Chips sort tagged first. Unknown and untagged stay listed — they are not hidden.</p>`;
+  </p>`;
 }
 
 function renderToday(bundle: TripBundle): string {
@@ -738,9 +743,7 @@ function renderToday(bundle: TripBundle): string {
     ${alertsStrip(bundle, day)}
     <p class="whisper">${esc(cacheAge(state.loadedAt))} · ${esc(state.source)}${bundle.generated ? ` · bundle ${esc(bundle.generated)}` : ""}</p>
     ${day?.note ? `<details class="fold"><summary>Day note</summary><p>${esc(String(day.note))}</p></details>` : ""}
-    <h2>Hikes &amp; photo ops</h2>
-    <p class="note">A menu, not a schedule. Skip all is valid. Hiking nav is AllTrails, not this app. Cabin chips are which base a card serves, not a day’s plan.</p>
-    ${hikeListNotes(items)}
+    <h2>Hikes &amp; photo ops${items.length ? ` (${items.length})` : ""}</h2>
     ${emptyOrMissing("hikes", bundle, "Hikes")}
     ${collapsedCards(items, "", "hikes")}
     ${renderGatewayCard(bundle)}
@@ -827,8 +830,6 @@ function renderFilters(bundle: TripBundle): string {
   const subjects = [...new Set(menuItems(bundle).flatMap((i) => subjectOf(i.raw)))];
   return `<section>
     <h1>Filters</h1>
-    <p class="note">Filters do not pick a winner. Default sort is nearby/GPS when permitted. <code>no_early_mornings</code> is a sort key, not a filter. Hiking nav is AllTrails, not this app.</p>
-    ${hikeListNotes(items)}
     <form class="filters" data-action="filters">
       <label>Dogs
         <select name="dogs">
@@ -851,7 +852,7 @@ function renderFilters(bundle: TripBundle): string {
         <input name="maxMiles" inputmode="decimal" value="${esc(state.filters.maxMiles)}" placeholder="e.g. 4">
       </label>
     </form>
-    <p class="meta">${items.length} shown · skip all is valid</p>
+    <p class="meta">${items.length} shown</p>
     ${items.length ? groupedByArea(items) : emptyOrMissing("hikes", bundle, "Hikes")}
   </section>`;
 }
@@ -900,7 +901,6 @@ function renderFood(bundle: TripBundle): string {
   };
   return `<section>
     <h1>Food</h1>
-    <p class="note">List first. GF and DF are separate. Preference, not celiac. Missing tag does not hide a place. Unknown is not safe.</p>
     ${always ? `<p class="whisper">${esc(always)}</p>` : ""}
     ${dietChipBar()}
     ${emptyOrMissing("food", bundle, "Food")}
@@ -1154,6 +1154,7 @@ function pinSheet(pin: MapPin | undefined): string {
       : `${foldSection("Why / why not", pin.facts.length ? pin.facts : ["No why-go text in this bundle."])}${foldSection("Look out for", ["Look out for: not in this bundle."])}${foldSection("Around this", ["Around this: not in this bundle."])}${foldSection("Details", ["Details: not in this bundle."])}`;
   const chip = unverified ? `<p class="pills"><span class="pill">UNVERIFIED</span></p>` : "";
   return `<div id="pin-sheet" class="pin-sheet"><article class="card">
+    ${item ? photoPeek(item) : ""}
     <h3>${esc(pin.name)}</h3>
     ${chip}
     <p class="whisper">${esc(pin.facts[0] ?? "")}</p>
@@ -1175,7 +1176,7 @@ function renderMap(bundle: TripBundle): string {
     ${layerChips()}
     <div id="map" class="map" role="application"></div>
     ${pinSheet(selected)}
-    ${state.mapLayers.photos && photoCount && !photoPins ? `<p class="gap">Photos layer is on. Trailhead pins are not in this bundle. Empty list ≠ “nothing here”.</p>` : ""}
+    ${state.mapLayers.photos && photoCount && !photoPins ? `<p class="gap">Photos layer is on. No photo pins in this bundle.</p>` : ""}
     ${state.mapLayers.food && foodCount && !foodPins ? `<p class="gap">Food layer is on. Food places have no coordinates in this bundle. Empty list ≠ “nothing here”.</p>` : ""}
     <ul class="sync-list">
       ${list
@@ -1234,8 +1235,8 @@ function renderAround(bundle: TripBundle): string {
   const gps = state.gps;
   return `<section class="map-screen">
     <h1>Around</h1>
-    <p class="lede">Things to do around us. Distances use ${esc(cabin === "nederland" ? "Nederland" : "Drake")} cabin coordinates from the bundle. OSM extras are UNVERIFIED. Not gas. Not hiking GPS.</p>
-    <p class="note">detour_minutes = ${detour ?? "unknown"} (printed as minutes, not converted to miles).</p>
+    <p class="lede">Distances use ${esc(cabin === "nederland" ? "Nederland" : "Drake")} cabin coordinates. OSM extras are UNVERIFIED.</p>
+    <p class="note">detour_minutes = ${detour ?? "unknown"}</p>
     ${here ? `<p class="whisper">Based-at pin ${here.lat.toFixed(4)}, ${here.lon.toFixed(4)}</p>` : `<p class="gap">Cabin coordinates missing in this bundle.</p>`}
     ${gps ? `<p class="whisper">Phone GPS ${gps.lat.toFixed(4)}, ${gps.lon.toFixed(4)} (extras only)</p>` : `<p class="note">This screen asks for location for OSM extras. Fail visibly if denied.</p>`}
     ${state.gpsError ? `<p class="gap">${esc(state.gpsError)}</p>` : ""}
@@ -1258,7 +1259,6 @@ function renderAround(bundle: TripBundle): string {
     ${state.extrasBusy ? `<p class="note">Loading extras…</p>` : ""}
     ${state.extrasError ? `<p class="gap">${esc(state.extrasError)}</p>` : ""}
     ${state.extrasAt ? `<p class="whisper">fetched-at ${esc(state.extrasAt)}</p>` : ""}
-    <p class="whisper">Open in Maps for turn-by-turn. This screen is not GPS navigation. No in-app hiking nav.</p>
   </section>`;
 }
 
@@ -1434,6 +1434,7 @@ function renderPhotos(bundle: TripBundle): string {
       const item = { id: `photo-${name}`, name, raw };
       const firstPlace = s?.places[0];
       return `<article class="card">
+        ${photoPeek(item)}
         <h2 class="inline-h">${esc(name)}</h2>
         ${peek ? `<p class="lede">${esc(peek)}</p>` : ""}
         ${firstPlace ? actionRow({ maps: mapsSearchUrl(firstPlace) }) : ""}
@@ -1447,7 +1448,6 @@ function renderPhotos(bundle: TripBundle): string {
 
   return `<section>
     <h1>Photos</h1>
-    <p class="lede">Subjects from trip.subjects. Named elk meadows from behaviour — names only, no invented pins. Hikes as picture spots, grouped by area.</p>
     ${subjectCards || `<p class="gap">trip.subjects missing.</p>`}
     <h2>Hikes as picture spots</h2>
     ${hikeNames}
@@ -1688,6 +1688,7 @@ export function paint(): void {
     void mountColorMap(state.bundle);
   }
   afterPaint();
+  if (!printing) void hydratePlacePhotos(document, state.bundle ? foliageWebcams(state.bundle) : []);
 }
 
 function bind(): void {

@@ -10,6 +10,7 @@ import {
   validateBundle,
   daysList,
   collectionItems,
+  darkestPlausibleNight,
 } from "./bundle.ts";
 
 describe("trip-bundle", () => {
@@ -56,6 +57,18 @@ describe("trip-bundle", () => {
     assert.equal(lines.some((l) => l.includes("4.0")), false);
   });
 
+  it("prints nested AllTrails round-trip and agency one-way without averaging", () => {
+    const lines = milesLines({
+      alltrails: { round_trip_mi: 6.6 },
+      agency: { one_way_mi: 2 },
+      each_way_mi: 3.3,
+    });
+    assert.ok(lines.some((l) => /AllTrails/i.test(l) && l.includes("6.6")));
+    assert.ok(lines.some((l) => /agency/i.test(l) && l.includes("2")));
+    assert.ok(lines.some((l) => /derived/i.test(l) && l.includes("3.3")));
+    assert.equal(lines.some((l) => l.includes("4.3")), false);
+  });
+
   it("treats missing dog rule as unknown, not banned", () => {
     assert.equal(dogStatus({}), "unknown");
     assert.equal(dogStatus({ dogs: false }), "banned");
@@ -69,6 +82,22 @@ describe("trip-bundle", () => {
     const missing = gfDf({});
     assert.match(missing.gf, /unknown/);
     assert.match(missing.df, /unknown/);
+  });
+
+  it("prints GF/DF as status (confidence) and never a source URL", () => {
+    const printed = gfDf({
+      gluten_free: {
+        status: "stocked",
+        quote: "organic, and gluten-free foods",
+        confidence: "official",
+        source: "https://www.thecountrymarketofestespark.com/",
+      },
+      dairy_free: { status: "unknown", quote: null, confidence: null, source: null },
+    });
+    assert.equal(printed.gf, "GF: stocked (official)");
+    assert.equal(printed.gfQuote, "organic, and gluten-free foods");
+    assert.doesNotMatch(printed.gf, /https?:/);
+    assert.match(printed.df, /^DF: unknown$/);
   });
 
   it("renders light from the day object", () => {
@@ -99,5 +128,25 @@ describe("trip-bundle", () => {
     };
     assert.equal(behaviour.subjects.bighorn.action, "low");
     assert.match(behaviour.subjects.bighorn.detail, /NOT in rut/i);
+  });
+
+  it("prints Lake Isabelle nested AllTrails and agency miles from the engine file", () => {
+    const hike = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Lake Isabelle");
+    assert.ok(hike);
+    const lines = milesLines(hike.raw);
+    assert.ok(lines.some((l) => /AllTrails/i.test(l) && l.includes("6.6")));
+    assert.ok(lines.some((l) => /agency/i.test(l) && l.includes("2")));
+    assert.equal(lines.some((l) => /not in this bundle/i.test(l)), false);
+  });
+
+  it("picks a plausible night length, not wrap-around 24 h driving verdicts", () => {
+    const hit = darkestPlausibleNight(daysList(bundle));
+    assert.ok(hit);
+    assert.ok(hit.hours < 12);
+    assert.notEqual(hit.day.date, "2026-09-29");
+    assert.equal(hit.day.date, "2026-10-05");
+    assert.equal(hit.hours, 6.4);
+    const oct4 = daysList(bundle).find((d) => d.date === "2026-10-04");
+    assert.match(oct4?.light?.moon?.verdict ?? "", /5\.2 h of real darkness/);
   });
 });

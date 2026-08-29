@@ -372,15 +372,21 @@ function collapsedCards(
 ): string {
   if (!items.length) return "";
   const open = foldId === "hikes" ? state.showAllHikes : state.showAllFood;
-  if (items.length <= preview) return items.map((i) => itemCard(i, extraClass)).join("");
-  const head = items.slice(0, preview);
-  const rest = items.slice(preview);
+  const folded = items.filter((i) => state.dogsWithUs && dogStatus(i.raw) === "banned");
+  const main = items.filter((i) => !(state.dogsWithUs && dogStatus(i.raw) === "banned"));
+  const foldedHtml = folded.map((i) => itemCard(i, extraClass)).join("");
   const noun = foldId === "food" ? "places" : "hikes";
+  if (main.length <= preview) {
+    return `${main.map((i) => itemCard(i, extraClass)).join("")}${foldedHtml}`;
+  }
+  const head = main.slice(0, preview);
+  const rest = main.slice(preview);
   return `${head.map((i) => itemCard(i, extraClass)).join("")}
     <details class="fold show-all" data-fold="${foldId}" ${open ? "open" : ""}>
       <summary>${items.length} ${noun} — show all</summary>
       ${rest.map((i) => itemCard(i, extraClass)).join("")}
-    </details>`;
+    </details>
+    ${foldedHtml}`;
 }
 
 function areaGroupKey(raw: Record<string, unknown>, kind: "hike" | "food"): string {

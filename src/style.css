@@ -278,6 +278,38 @@ img { max-width: 100%; border-radius: 10px; }
   color: var(--fg);
   margin: 0 0 0.35rem;
 }
+img.webcam {
+  width: 100%;
+  background: #111;
+  min-height: 120px;
+  object-fit: cover;
+}
+.show-all summary { color: var(--accent); font-size: 1rem; }
+.area-fold {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 4px 14px 8px;
+  margin: 0 0 12px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.area-fold .card { box-shadow: none; }
+.more-links {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  display: grid;
+}
+.more-links a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 650;
+  border-bottom: 1px solid var(--line);
+}
+#color-map { min-height: 260px; }
 body.printing .tabbar, body.printing .top { display: none; }
 body.printing { padding: 0; }
 @media print {

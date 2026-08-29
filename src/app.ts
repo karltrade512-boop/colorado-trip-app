@@ -2,6 +2,7 @@ import type { Map as LeafletMap } from "leaflet";
 import type { Day, LiveResult, TripBundle, UnverifiedExtra } from "./types";
 import {
   areaOf,
+  behaviourSubject,
   collection,
   collectionItems,
   collectionNote,
@@ -11,7 +12,16 @@ import {
   dogStatus,
   earlyCost,
   elevationLine,
-  foliageBlocks,
+  foliageBandForPlace,
+  foliageBands,
+  foliageCountyWindows,
+  foliageExploreFallUrl,
+  foliageHasObservation,
+  foliageModelFetched,
+  foliageModelStatus,
+  foliageRanking,
+  foliageSources,
+  foliageWebcams,
   gfDf,
   isRecord,
   itemLatLon,
@@ -29,14 +39,27 @@ import {
   runsList,
   str,
   subjectOf,
+  tripSubjects,
   todayIso,
   validateBundle,
 } from "./bundle";
 import { idbGet, idbSet, type CachedBundle } from "./db";
-import { haversineKm, isStandalone, mapsUrl } from "./geo";
+import { haversineKm, isStandalone, mapsSearchUrl, mapsUrl } from "./geo";
 import { bundleLiveTargets, fetchLive, fetchUnverifiedExtras } from "./live";
 
-export type RouteId = "today" | "map" | "light" | "filters" | "open" | "drive" | "food" | "gaps" | "more";
+export type RouteId =
+  | "today"
+  | "map"
+  | "light"
+  | "filters"
+  | "open"
+  | "drive"
+  | "around"
+  | "food"
+  | "gaps"
+  | "more"
+  | "color"
+  | "photos";
 
 type Filters = {
   dogs: "any" | "ok" | "unknown" | "banned";
@@ -54,6 +77,8 @@ type AppState = {
   printDate: string | null;
   dogsWithUs: boolean;
   showLow: boolean;
+  showAllHikes: boolean;
+  showAllFood: boolean;
   filters: Filters;
   gps: { lat: number; lon: number; at: number } | null;
   gpsError: string | null;
@@ -61,8 +86,11 @@ type AppState = {
   extras: UnverifiedExtra[];
   extrasError: string | null;
   extrasAt: string | null;
+  extrasBusy: boolean;
   live: LiveResult[];
   liveBusy: boolean;
+  colorCams: LiveResult[];
+  colorBusy: boolean;
   saveProgress: number | null;
   saveMessage: string | null;
   standalone: boolean;
@@ -79,6 +107,8 @@ const state: AppState = {
   printDate: null,
   dogsWithUs: sessionStorage.getItem("dogsWithUs") === "1",
   showLow: false,
+  showAllHikes: false,
+  showAllFood: false,
   filters: { ...FILTERS_DEFAULT },
   gps: null,
   gpsError: null,
@@ -86,14 +116,20 @@ const state: AppState = {
   extras: [],
   extrasError: null,
   extrasAt: null,
+  extrasBusy: false,
   live: [],
   liveBusy: false,
+  colorCams: [],
+  colorBusy: false,
   saveProgress: null,
   saveMessage: null,
   standalone: false,
 };
 
 let map: LeafletMap | null = null;
+let colorMap: LeafletMap | null = null;
+let aroundAutoStarted = false;
+let colorAutoStarted = false;
 
 function esc(s: string): string {
   return s
@@ -106,10 +142,24 @@ function esc(s: string): string {
 function parseHash(): { route: RouteId; printDate: string | null } {
   const h = (location.hash || "#/today").replace(/^#/, "");
   const parts = h.split("/").filter(Boolean);
-  const head = parts[0] || "today";
-  if (head === "print") return { route: "today", printDate: parts[1] ?? null };
-  const known: RouteId[] = ["today", "map", "light", "filters", "open", "drive", "food", "gaps", "more"];
-  return { route: known.includes(head as RouteId) ? (head as RouteId) : "today", printDate: null };
+  const raw = parts[0] || "today";
+  if (raw === "print") return { route: "today", printDate: parts[1] ?? null };
+  const known: RouteId[] = [
+    "today",
+    "map",
+    "light",
+    "filters",
+    "open",
+    "drive",
+    "around",
+    "food",
+    "gaps",
+    "more",
+    "color",
+    "photos",
+  ];
+  const head = (raw === "drive" ? "around" : raw) as RouteId;
+  return { route: known.includes(head) ? head : "today", printDate: null };
 }
 
 function cacheAge(ms: number | null): string {
@@ -306,6 +356,81 @@ function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""):
   </article>`;
 }
 
+function hikeAreaGroup(raw: Record<string, unknown>): string {
+  const a = (areaOf(raw) ?? "").toLowerCase();
+  if (/brainard/.test(a) || (/indian peaks/.test(a) && !/fourth of july/.test(a))) return "Brainard";
+  if (/rmnp|rocky mountain/.test(a)) return "RMNP";
+  if (/nederland|eldora|hessie|fourth of july|caribou|arapaho/.test(a)) return "Nederland";
+  return areaOf(raw) ?? "Other";
+}
+
+function collapsedCards(
+  items: ReturnType<typeof namedItems>,
+  extraClass: string,
+  foldId: "hikes" | "food",
+  preview = 3,
+): string {
+  if (!items.length) return "";
+  const open = foldId === "hikes" ? state.showAllHikes : state.showAllFood;
+  const folded = items.filter((i) => state.dogsWithUs && dogStatus(i.raw) === "banned");
+  const main = items.filter((i) => !(state.dogsWithUs && dogStatus(i.raw) === "banned"));
+  const foldedHtml = folded.map((i) => itemCard(i, extraClass)).join("");
+  const noun = foldId === "food" ? "places" : "hikes";
+  if (main.length <= preview) {
+    return `${main.map((i) => itemCard(i, extraClass)).join("")}${foldedHtml}`;
+  }
+  const head = main.slice(0, preview);
+  const rest = main.slice(preview);
+  return `${head.map((i) => itemCard(i, extraClass)).join("")}
+    <details class="fold show-all" data-fold="${foldId}" ${open ? "open" : ""}>
+      <summary>${items.length} ${noun} — show all</summary>
+      ${rest.map((i) => itemCard(i, extraClass)).join("")}
+    </details>
+    ${foldedHtml}`;
+}
+
+function areaGroupKey(raw: Record<string, unknown>, kind: "hike" | "food"): string {
+  if (kind === "food") return (areaOf(raw) ?? "Other").replace(/_/g, " ");
+  return hikeAreaGroup(raw);
+}
+
+function groupedBlocks(
+  items: ReturnType<typeof namedItems>,
+  render: (it: ReturnType<typeof namedItems>[number]) => string,
+  order: string[],
+  kind: "hike" | "food" = "hike",
+): string {
+  const groups = new Map<string, ReturnType<typeof namedItems>>();
+  for (const it of items) {
+    const g = areaGroupKey(it.raw, kind);
+    const list = groups.get(g) ?? [];
+    list.push(it);
+    groups.set(g, list);
+  }
+  const rank = (k: string) => order.findIndex((o) => o.toLowerCase() === k.toLowerCase());
+  const keys = [...groups.keys()].sort((a, b) => {
+    const ia = rank(a);
+    const ib = rank(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  return keys
+    .map((key, i) => {
+      const list = groups.get(key) ?? [];
+      return `<details class="fold area-fold" ${i === 0 ? "open" : ""}>
+        <summary>${esc(key)} (${list.length})</summary>
+        ${list.map((it) => render(it)).join("")}
+      </details>`;
+    })
+    .join("");
+}
+
+function groupedByArea(items: ReturnType<typeof namedItems>, extraClass = ""): string {
+  return groupedBlocks(items, (it) => itemCard(it, extraClass), ["Brainard", "RMNP", "Nederland"]);
+}
+
 function hikeListNotes(items: ReturnType<typeof namedItems>): string {
   if (!items.length) return "";
   const anyMiles = items.some((i) => milesLines(i.raw).length > 0);
@@ -340,8 +465,6 @@ function renderToday(bundle: TripBundle): string {
     menuItems(bundle).filter((it) => matchesFilters(it.raw, state.filters)),
     bundle,
   );
-  const high = items.filter((i) => rankGroup(i.raw) === "high");
-  const low = items.filter((i) => rankGroup(i.raw) === "low");
   const statusLine =
     pick.status === "today"
       ? prettyDate(now)
@@ -372,8 +495,8 @@ function renderToday(bundle: TripBundle): string {
     gotchas.push(`Brainard last_seen: ${str(gate.last_seen) ?? "unknown"}${str(gate.checked) ? ` · checked ${str(gate.checked)}` : ""}`);
   }
 
-  const foliage = foliageBlocks(collection(bundle, "foliage"));
   const titleDate = prettyDate(day?.date) || prettyDate(now) || "Today";
+  const ranking = foliageRanking(bundle);
 
   return `<section class="today">
     <p class="kicker">${esc(statusLine === titleDate ? bundle.trip?.name ?? "Trip" : statusLine)}</p>
@@ -385,15 +508,7 @@ function renderToday(bundle: TripBundle): string {
     <p class="note">A menu, not a schedule. Skip all is valid. Hiking nav is AllTrails, not this app.</p>
     ${hikeListNotes(items)}
     ${emptyOrMissing("hikes", bundle, "Hikes")}
-    ${high.map((i) => itemCard(i)).join("")}
-    ${
-      low.length
-        ? `<details class="fold" ${state.showLow ? "open" : ""}>
-            <summary>Low-ranked (${low.length}) — still here</summary>
-            ${low.map((i) => itemCard(i)).join("")}
-          </details>`
-        : ""
-    }
+    ${collapsedCards(items, "", "hikes")}
     <h2>Food nearby</h2>
     ${
       isRecord(collection(bundle, "food")) && str((collection(bundle, "food") as Record<string, unknown>).always_print)
@@ -402,7 +517,7 @@ function renderToday(bundle: TripBundle): string {
     }
     ${
       food.length
-        ? food.map((i) => itemCard(i, "food")).join("")
+        ? collapsedCards(food, "food", "food")
         : foodItems(bundle).length
           ? `<p class="note">No places tagged for this base. Full list is on Food.</p>`
           : emptyOrMissing("food", bundle, "Food")
@@ -410,16 +525,8 @@ function renderToday(bundle: TripBundle): string {
     <h2>Gotchas</h2>
     ${gotchas.length ? `<ul class="facts tight">${gotchas.map((g) => `<li>${esc(g)}</li>`).join("")}</ul>` : `<p class="gap">No gotchas block for today in this bundle.</p>`}
     <h2>Fall color</h2>
-    ${
-      foliage.length
-        ? foliage
-            .map(
-              (b) =>
-                `<article class="card quiet-card"><p class="badge">${esc(b.kind)}</p><p>${esc(b.text)}</p>${b.as_of ? `<p class="whisper">as of ${esc(b.as_of)}</p>` : `<p class="whisper">as-of unknown</p>`}</article>`,
-            )
-            .join("")
-        : `<p class="gap">No foliage block in this bundle.</p>`
-    }
+    <p class="lede"><a href="#/color">Webcams first, then a map of cabins we have pins for — open Color</a></p>
+    ${ranking ? `<p class="whisper">${esc(ranking)}</p>` : ""}
     <p class="print-link"><a href="#/print/${esc(day?.date ?? "")}">Printable day view</a></p>
   </section>`;
 }
@@ -493,7 +600,7 @@ function renderFilters(bundle: TripBundle): string {
       </label>
     </form>
     <p class="meta">${items.length} shown · skip all is valid</p>
-    ${items.map((i) => itemCard(i)).join("") || emptyOrMissing("hikes", bundle, "Hikes")}
+    ${items.length ? groupedByArea(items) : emptyOrMissing("hikes", bundle, "Hikes")}
   </section>`;
 }
 
@@ -538,7 +645,16 @@ function renderFood(bundle: TripBundle): string {
     ${always ? `<p class="whisper">${esc(always)}</p>` : ""}
     ${areas.length ? `<p class="whisper">${areas.map((a) => esc(a.replace(/_/g, " "))).join(" · ")}</p>` : ""}
     ${emptyOrMissing("food", bundle, "Food")}
-    ${items.map((i) => itemCard(i, "food")).join("")}
+    ${
+      items.length
+        ? groupedBlocks(
+            items,
+            (i) => itemCard(i, "food"),
+            ["estes park", "nederland", "lubbock", "amarillo"],
+            "food",
+          )
+        : ""
+    }
   </section>`;
 }
 
@@ -571,7 +687,14 @@ function renderMore(bundle: TripBundle): string {
   const targets = bundleLiveTargets(bundle);
   const gate = collection(bundle, "gates");
   return `<section>
-    <h1>Install</h1>
+    <h1>More</h1>
+    <nav class="more-links" aria-label="Other screens">
+      <a href="#/light">Days / light</a>
+      <a href="#/filters">Filters</a>
+      <a href="#/open">Open calls</a>
+      <a href="#/gaps">Gaps</a>
+    </nav>
+    <h2>Install</h2>
     <article class="card quiet-card">
       <h2 class="inline-h">Add to Home Screen</h2>
       ${a2hs}
@@ -660,38 +783,277 @@ function renderMap(bundle: TripBundle): string {
   </section>`;
 }
 
-function renderDrive(bundle: TripBundle): string {
+function tripStops(bundle: TripBundle): Array<{ id: string; name: string; lat: number; lon: number; kind: string }> {
+  const out: Array<{ id: string; name: string; lat: number; lon: number; kind: string }> = [];
+  for (const p of placesList(bundle)) {
+    if (p.lat != null && p.lon != null) {
+      out.push({
+        id: p.id ?? p.name ?? "place",
+        name: p.name ?? "place",
+        lat: p.lat,
+        lon: p.lon,
+        kind: p.id === "origin" ? "origin" : "cabin",
+      });
+    }
+  }
+  for (const it of menuItems(bundle)) {
+    const c = itemLatLon(it.raw);
+    if (c) out.push({ id: it.id, name: it.name, lat: c.lat, lon: c.lon, kind: "trail/photo" });
+  }
+  return out;
+}
+
+function renderAround(bundle: TripBundle): string {
   const detour = bundle.trip?.detour_minutes;
-  const stops = allMappable(bundle);
+  const stops = tripStops(bundle);
   const gps = state.gps;
   const sortedStops = gps
     ? stops.slice().sort((a, b) => haversineKm(gps.lat, gps.lon, a.lat, a.lon) - haversineKm(gps.lat, gps.lon, b.lat, b.lon))
     : stops;
   return `<section>
-    <h1>Driving glance</h1>
-    <p class="note">Trip stops first, then UNVERIFIED OSM extras. Not gas. Not popularity. detour_minutes = ${detour ?? "unknown"} (printed, not turned into miles).</p>
-    <button class="btn" data-action="gps">${gps ? "Refresh GPS" : "Use GPS"}</button>
-    ${gps ? `<p class="meta">GPS ${gps.lat.toFixed(4)}, ${gps.lon.toFixed(4)}</p>` : ""}
+    <h1>Around</h1>
+    <p class="lede">Things to do around us. Trip-bundle stops first. OSM extras are UNVERIFIED. Not gas. Not hiking GPS. Not turn-by-turn.</p>
+    <p class="note">detour_minutes = ${detour ?? "unknown"} (printed as minutes, not converted to miles).</p>
+    ${
+      gps
+        ? `<p class="whisper">GPS ${gps.lat.toFixed(4)}, ${gps.lon.toFixed(4)}</p>`
+        : `<p class="note">This screen asks for location when you open it. Fail visibly if denied.</p>`
+    }
     ${state.gpsError ? `<p class="gap">${esc(state.gpsError)}</p>` : ""}
-    <h2>Trip stops</h2>
-    ${sortedStops
-      .map((s) => {
-        const d = gps ? `${haversineKm(gps.lat, gps.lon, s.lat, s.lon).toFixed(1)} km` : "";
-        return `<article class="card"><h3>${esc(s.name)}</h3><p class="meta">${esc(s.kind)} ${esc(d)}</p>
-          <a class="btn" href="${esc(mapsUrl(s.lat, s.lon, s.name))}">Open in Maps</a></article>`;
-      })
-      .join("") || `<p class="gap">No trip stops with pins.</p>`}
+    <p>
+      <button class="btn" data-action="gps">${gps ? "Refresh GPS" : "Use my location"}</button>
+      <button class="btn" data-action="extras" ${gps ? "" : "disabled"}>${state.extrasBusy ? "Loading extras…" : "Refresh extras"}</button>
+    </p>
+    <h2>Trip stops (engine)</h2>
+    ${
+      sortedStops
+        .map((s) => {
+          const d = gps ? `${haversineKm(gps.lat, gps.lon, s.lat, s.lon).toFixed(1)} km` : "";
+          return `<article class="card"><h3>${esc(s.name)}</h3><p class="whisper">${esc(s.kind)}${d ? ` · ${esc(d)}` : ""}</p>
+            <a class="btn small" href="${esc(mapsUrl(s.lat, s.lon, s.name))}">Open in Maps</a></article>`;
+        })
+        .join("") || `<p class="gap">No trip stops with pins in this bundle.</p>`
+    }
     <h2>UNVERIFIED extras</h2>
-    <button class="btn" data-action="extras" ${gps ? "" : "disabled"}>Fetch nearby OSM extras</button>
+    <p class="note">Viewpoints, pullouts, overlooks, wildlife viewing from OpenStreetMap. Fuel is never listed. Not mixed into Today.</p>
+    ${state.extrasBusy ? `<p class="note">Loading extras…</p>` : ""}
     ${state.extrasError ? `<p class="gap">${esc(state.extrasError)}</p>` : ""}
-    ${state.extrasAt ? `<p class="meta">fetched-at ${esc(state.extrasAt)}</p>` : ""}
-    ${state.extras
-      .map(
-        (e) =>
-          `<article class="card unverified"><h3>${esc(e.name)}</h3><p class="whisper">UNVERIFIED · ${esc(e.kind)}</p>
-           <a class="btn small" href="${esc(mapsUrl(e.lat, e.lon, e.name))}">Open in Maps</a></article>`,
-      )
-      .join("")}
+    ${state.extrasAt ? `<p class="whisper">fetched-at ${esc(state.extrasAt)}</p>` : ""}
+    ${
+      state.extras.length
+        ? state.extras
+            .map(
+              (e) =>
+                `<article class="card unverified"><h3>${esc(e.name)}</h3><p class="whisper">UNVERIFIED · ${esc(e.kind)}</p>
+                 <a class="btn small" href="${esc(mapsUrl(e.lat, e.lon, e.name))}">Open in Maps</a></article>`,
+            )
+            .join("")
+        : gps && !state.extrasBusy && !state.extrasError
+          ? `<p class="note">No extras returned yet.</p>`
+          : ""
+    }
+    <p class="whisper">Open in Maps for turn-by-turn. This screen is not GPS navigation.</p>
+  </section>`;
+}
+
+function fmtFt(n: number | undefined): string {
+  if (n === undefined) return "ft unknown";
+  return `${n} ft`;
+}
+
+function colorPins(bundle: TripBundle): Array<{
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  elevation_display?: string | null;
+}> {
+  const out: Array<{
+    id: string;
+    name: string;
+    lat: number;
+    lon: number;
+    elevation_display?: string | null;
+  }> = [];
+  for (const id of ["drake", "nederland"] as const) {
+    const p = placeById(bundle, id);
+    if (p?.lat != null && p.lon != null) {
+      out.push({
+        id: p.id ?? id,
+        name: p.name ?? id,
+        lat: p.lat,
+        lon: p.lon,
+        elevation_display: p.elevation_display,
+      });
+    }
+  }
+  return out;
+}
+
+function bandMatchesPin(placeName: string, bandPlace: string): boolean {
+  const n = placeName.toLowerCase();
+  const b = bandPlace.toLowerCase();
+  return n.includes(b) || b.includes(n.split(",")[0]?.trim() ?? n);
+}
+
+function renderColor(bundle: TripBundle): string {
+  const cams = foliageWebcams(bundle);
+  const sources = foliageSources(bundle);
+  const explore = foliageExploreFallUrl(bundle);
+  const bands = foliageBands(bundle);
+  const pins = colorPins(bundle);
+  const unpinned = bands.filter((band) => !pins.some((p) => bandMatchesPin(p.name, band.place)));
+  const ranking = foliageRanking(bundle);
+  const asOf = foliageModelFetched(bundle);
+  const county = foliageCountyWindows(bundle);
+  return `<section>
+    <h1>Color</h1>
+    <p class="lede">Webcam stills first (bundle ranking). Then pins that exist in this bundle. Then FORECAST county windows and elevation model. OBSERVATION none if missing. Not hiking GPS.</p>
+    ${ranking ? `<p class="note">${esc(ranking)}</p>` : ""}
+    <h2>Webcam stills</h2>
+    <p class="whisper">${cams.length} RMNP stills in foliage.webcams. Failed fetch is not “no color”.</p>
+    <p><button class="btn" data-action="color-cams" ${state.colorBusy ? "disabled" : ""}>${state.colorBusy ? "Refreshing…" : "Refresh stills"}</button></p>
+    ${
+      cams.length
+        ? cams
+            .map((cam) => {
+              const live = state.colorCams.find((r) => r.url === cam.url);
+              const stamp = live?.fetchedAt ?? "not fetched yet";
+              const fail =
+                live && !live.ok
+                  ? `<p class="gap">${esc(`fetch failed — ${live.error ?? "unknown"}. This is not “no color”. Still showing the NPS still URL.`)}</p>`
+                  : "";
+              return `<article class="card webcam-card">
+                <h3>${esc(cam.name)}</h3>
+                ${cam.note ? `<p class="whisper">${esc(cam.note)}</p>` : ""}
+                ${cam.url ? `<p><img class="webcam" src="${esc(cam.url)}" alt="${esc(cam.name)}" loading="lazy" /></p>` : `<p class="gap">Webcam URL missing.</p>`}
+                ${fail}
+                <p class="whisper">fetched-at ${esc(stamp)}</p>
+                ${cam.url ? `<p class="whisper"><a href="${esc(cam.url)}">Open still</a></p>` : ""}
+              </article>`;
+            })
+            .join("")
+        : `<p class="gap">No webcams in this bundle.</p>`
+    }
+    <h2>Fall color map</h2>
+    <p class="note">Only places with coordinates in this bundle are pinned: Drake and Nederland. Trail Ridge, Bear Lake, and Estes Park have no pin. Not hiking GPS, not turn-by-turn, not offline topo.</p>
+    <div id="color-map" class="map" role="application" aria-label="Fall color map of bundle pins"></div>
+    <h3 class="inline-h">No pin in this bundle</h3>
+    <ul class="facts">
+      ${
+        unpinned.length
+          ? unpinned
+              .map(
+                (band) =>
+                  `<li><strong>${esc(band.place)}</strong> · ${esc(fmtFt(band.elevation_ft))} · modelled peak ${esc(band.modelled_peak ?? "unknown")} · FORECAST</li>`,
+              )
+              .join("")
+          : `<li class="note">Every modelled band has a pin in this bundle.</li>`
+      }
+    </ul>
+    ${
+      explore
+        ? `<p><a class="btn" href="${esc(explore)}" target="_blank" rel="noopener">Open fall color map</a></p>
+           <p class="whisper">Explore Fall Colorado map. Extra — not the only map. Not scraped into this app as an observation.</p>`
+        : `<p class="gap">Explore Fall URL missing from foliage.sources.</p>`
+    }
+    <h2>FORECAST — county windows</h2>
+    <ul class="facts">
+      ${
+        county.length
+          ? county
+              .map((w) => {
+                const window = w.from && w.to ? `${w.from} → ${w.to}` : w.from ?? "missing";
+                return `<li><strong>${esc(w.county)}</strong> ${esc(window)} · FORECAST</li>`;
+              })
+              .join("")
+          : `<li class="note">No county_forecast in this bundle.</li>`
+      }
+    </ul>
+    <h2>FORECAST — elevation model</h2>
+    <p class="note">${esc(foliageModelStatus(bundle) || "MODEL status missing.")}</p>
+    <p class="whisper">as-of: ${esc(asOf || "missing")}</p>
+    <ul class="facts">
+      ${
+        bands.length
+          ? bands
+              .map(
+                (band) =>
+                  `<li><strong>${esc(band.place)}</strong> ${esc(fmtFt(band.elevation_ft))} · modelled peak ${esc(band.modelled_peak ?? "unknown")} · FORECAST</li>`,
+              )
+              .join("")
+          : `<li class="note">No model bands.</li>`
+      }
+    </ul>
+    <h2>OBSERVATION</h2>
+    <p>${foliageHasObservation(bundle) ? esc("Observation object present in this bundle.") : "OBSERVATION: none in this bundle"}</p>
+    ${
+      sources.filter((s) => s.url !== explore).length
+        ? `<h2>Other foliage sources</h2><ul class="facts">${sources
+            .filter((s) => s.url !== explore)
+            .map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>${s.what ? ` — ${esc(s.what)}` : ""}</li>`)
+            .join("")}</ul>`
+        : ""
+    }
+  </section>`;
+}
+
+function renderPhotos(bundle: TripBundle): string {
+  const subjects = tripSubjects(bundle);
+  const subjectCards = subjects
+    .map((name) => {
+      const s = behaviourSubject(bundle, name);
+      const places = s?.places ?? [];
+      const placesHtml =
+        places.length === 0
+          ? `<p class="gap">${esc(`GAP: no named places for ${name} in this bundle. Empty list is not “nothing here”.`)}</p>`
+          : `<ul class="facts">${places
+              .map(
+                (place) =>
+                  `<li>
+                    <strong>${esc(place)}</strong>
+                    <span class="whisper"> · no pin in this bundle</span>
+                    <p><a class="btn small" href="${esc(mapsSearchUrl(place))}">Open in Maps (name search)</a></p>
+                  </li>`,
+              )
+              .join("")}</ul>
+            <p class="whisper">Meadow names without coordinates stay names. Do not invent photo-op pins.</p>`;
+      const extra =
+        name === "bighorn"
+          ? `<p class="lede">${esc(s?.detail?.match(/NOT in rut/i)?.[0] ?? "NOT in rut")}</p>`
+          : "";
+      return `<article class="card">
+        <h2 class="inline-h">${esc(name)}</h2>
+        ${extra}
+        <p>${esc(s?.detail || s?.action || "No behaviour text.")}</p>
+        ${s?.restriction ? `<p class="gap">${esc(s.restriction)}</p>` : ""}
+        ${placesHtml}
+        <p class="whisper">fetched-at ${esc(s?.fetched || "missing")}</p>
+        ${s?.source ? `<p class="whisper"><a href="${esc(s.source)}">Source</a></p>` : ""}
+      </article>`;
+    })
+    .join("");
+
+  const hikes = menuItems(bundle);
+  const hikeNames = groupedBlocks(
+    hikes,
+    (h) => {
+      const atUrl = isRecord(h.raw.alltrails) ? str(h.raw.alltrails.url) : undefined;
+      return `<article class="card">
+        <h3>${esc(h.name)}</h3>
+        <p class="whisper">Picture-spot name from the hike list. Full trail stats live on Today / Filters — not duplicated here.</p>
+        ${atUrl ? `<p><a href="${esc(atUrl)}">AllTrails listing</a></p>` : `<p class="whisper">AllTrails URL missing for this hike.</p>`}
+      </article>`;
+    },
+    ["Brainard", "RMNP", "Nederland"],
+  );
+
+  return `<section>
+    <h1>Photos</h1>
+    <p class="lede">Subjects from trip.subjects. Named elk meadows from behaviour — names only, no invented pins. Hikes as picture spots, grouped by area.</p>
+    ${subjectCards || `<p class="gap">trip.subjects missing.</p>`}
+    <h2>Hikes as picture spots</h2>
+    ${hikeNames}
   </section>`;
 }
 
@@ -708,15 +1070,17 @@ function renderPrint(bundle: TripBundle, date: string): string {
 function shell(body: string): string {
   const nav: Array<[RouteId, string]> = [
     ["today", "Today"],
-    ["map", "Map"],
-    ["light", "Light"],
-    ["filters", "Filters"],
-    ["open", "Open"],
-    ["drive", "Drive"],
+    ["around", "Around"],
+    ["photos", "Photos"],
+    ["color", "Color"],
     ["food", "Food"],
-    ["gaps", "Gaps"],
+    ["map", "Map"],
     ["more", "More"],
   ];
+  const on = (id: RouteId) => {
+    if (id === "around") return state.route === "around" || state.route === "drive";
+    return state.route === id;
+  };
   return `<div class="frame">
     <header class="top">
       <p class="brand">Colorado trip</p>
@@ -725,11 +1089,22 @@ function shell(body: string): string {
     <nav class="tabbar" aria-label="Screens">${nav
       .map(
         ([id, label]) =>
-          `<a class="${state.route === id ? "on" : ""}" href="#/${id}">${label}</a>`,
+          `<a class="${on(id) ? "on" : ""}" href="#/${id}">${label}</a>`,
       )
       .join("")}</nav>
     <main id="main">${body}</main>
   </div>`;
+}
+
+function destroyMaps(keep: "map" | "color" | "none"): void {
+  if (keep !== "map" && map) {
+    map.remove();
+    map = null;
+  }
+  if (keep !== "color" && colorMap) {
+    colorMap.remove();
+    colorMap = null;
+  }
 }
 
 async function mountMap(bundle: TripBundle): Promise<void> {
@@ -756,11 +1131,13 @@ async function mountMap(bundle: TripBundle): Promise<void> {
       weight: 2,
     })
       .addTo(map)
-      .bindPopup(p.name);
+      .bindPopup(
+        `<strong>${esc(p.name)}</strong><br><a href="${esc(mapsUrl(p.lat, p.lon, p.name))}">Open in Maps</a>`,
+      );
     m.on("click", () => {
       state.selectedId = p.id;
-      document.querySelectorAll(".sync-list .linkish").forEach((el) => {
-        el.classList.toggle("on", (el as HTMLElement).dataset.id === p.id);
+      document.querySelectorAll(".sync-list .linkish").forEach((node) => {
+        node.classList.toggle("on", (node as HTMLElement).dataset.id === p.id);
       });
     });
   }
@@ -772,6 +1149,48 @@ async function mountMap(bundle: TripBundle): Promise<void> {
   }
   const sel = pts.find((p) => p.id === state.selectedId);
   if (sel) map.setView([sel.lat, sel.lon], 12);
+}
+
+async function mountColorMap(bundle: TripBundle): Promise<void> {
+  const el = document.getElementById("color-map");
+  if (!el) return;
+  const L = await import("leaflet");
+  if (colorMap) {
+    colorMap.remove();
+    colorMap = null;
+  }
+  const pins = colorPins(bundle);
+  const asOf = foliageModelFetched(bundle) ?? "missing";
+  const center: [number, number] = pins[0] ? [pins[0].lat, pins[0].lon] : [40.2, -105.4];
+  colorMap = L.map(el).setView(center, 9);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap",
+    maxZoom: 18,
+  }).addTo(colorMap);
+  for (const p of pins) {
+    const band = foliageBandForPlace(bundle, p.name);
+    const elev = p.elevation_display?.trim() || "elevation unknown";
+    const peak = band?.modelled_peak
+      ? `modelled peak ${band.modelled_peak}`
+      : "no matching foliage band in this bundle";
+    const html = `<strong>${esc(p.name)}</strong><br>${esc(elev)}<br>${esc(peak)} · FORECAST<br>as-of: ${esc(asOf)}<br><a href="${esc(mapsUrl(p.lat, p.lon, p.name))}">Open in Maps</a>`;
+    L.circleMarker([p.lat, p.lon], {
+      radius: 10,
+      color: "#e8b048",
+      fillColor: "#16302a",
+      fillOpacity: 1,
+      weight: 2,
+    })
+      .addTo(colorMap)
+      .bindPopup(html);
+  }
+  if (pins.length > 1) {
+    colorMap.fitBounds(
+      L.latLngBounds(pins.map((p) => [p.lat, p.lon] as [number, number])),
+      { padding: [28, 28] },
+    );
+  }
+  requestAnimationFrame(() => colorMap?.invalidateSize());
 }
 
 function bodyHtml(): string {
@@ -793,13 +1212,33 @@ function bodyHtml(): string {
     case "open":
       return renderOpen(bundle);
     case "drive":
-      return renderDrive(bundle);
+    case "around":
+      return renderAround(bundle);
     case "food":
       return renderFood(bundle);
     case "gaps":
       return renderGaps(bundle);
     case "more":
       return renderMore(bundle);
+    case "color":
+      return renderColor(bundle);
+    case "photos":
+      return renderPhotos(bundle);
+  }
+}
+
+function afterPaint(): void {
+  if (state.printDate) return;
+  if (state.route === "around" && !aroundAutoStarted) {
+    aroundAutoStarted = true;
+    void (async () => {
+      const ok = await requestGps();
+      if (ok) await loadExtras();
+    })();
+  }
+  if (state.route === "color" && !colorAutoStarted && state.bundle) {
+    colorAutoStarted = true;
+    void refreshColorCams();
   }
 }
 
@@ -808,10 +1247,16 @@ export function paint(): void {
   if (!root) return;
   const printing = Boolean(state.printDate);
   document.body.classList.toggle("printing", printing);
+  const keep = printing ? "none" : state.route === "map" ? "map" : state.route === "color" ? "color" : "none";
+  destroyMaps(keep);
   root.innerHTML = printing ? bodyHtml() : shell(bodyHtml());
   if (state.route === "map" && state.bundle && !printing) {
     void mountMap(state.bundle);
   }
+  if (state.route === "color" && state.bundle && !printing) {
+    void mountColorMap(state.bundle);
+  }
+  afterPaint();
 }
 
 function bind(): void {
@@ -832,8 +1277,19 @@ function bind(): void {
     if (action === "extras") void loadExtras();
     if (action === "save-offline") void saveOffline();
     if (action === "refresh-live") void refreshLive();
+    if (action === "color-cams") void refreshColorCams();
     if (action === "print") window.print();
   });
+  document.getElementById("app")?.addEventListener(
+    "toggle",
+    (ev) => {
+      const t = ev.target;
+      if (!(t instanceof HTMLDetailsElement)) return;
+      if (t.dataset.fold === "hikes") state.showAllHikes = t.open;
+      if (t.dataset.fold === "food") state.showAllFood = t.open;
+    },
+    true,
+  );
   document.getElementById("app")?.addEventListener("change", (ev) => {
     const target = ev.target as HTMLElement;
     if (target.matches("[data-action='dogs-with-us']")) {
@@ -856,29 +1312,35 @@ function bind(): void {
   });
 }
 
-async function requestGps(): Promise<void> {
+async function requestGps(): Promise<boolean> {
   if (!navigator.geolocation) {
     state.gpsError = "Geolocation is not available on this device.";
     paint();
-    return;
+    return false;
   }
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      state.gps = { lat: pos.coords.latitude, lon: pos.coords.longitude, at: Date.now() };
-      state.gpsError = null;
-      paint();
-    },
-    (err) => {
-      state.gpsError = `GPS denied or failed (${err.message}). Nearby sort stays off.`;
-      paint();
-    },
-    { enableHighAccuracy: true, timeout: 8000 },
-  );
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        state.gps = { lat: pos.coords.latitude, lon: pos.coords.longitude, at: Date.now() };
+        state.gpsError = null;
+        paint();
+        resolve(true);
+      },
+      (err) => {
+        state.gpsError = `GPS denied or failed (${err.message}). Nearby sort stays off. Location is required for Around extras.`;
+        paint();
+        resolve(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  });
 }
 
 async function loadExtras(): Promise<void> {
   const here = state.gps;
   if (!here) return;
+  state.extrasBusy = true;
+  paint();
   try {
     state.extras = await fetchUnverifiedExtras(here.lat, here.lon);
     state.extrasAt = new Date().toISOString();
@@ -886,6 +1348,22 @@ async function loadExtras(): Promise<void> {
   } catch (e) {
     state.extrasError = `OSM extras fetch failed — ${e instanceof Error ? e.message : "error"}. Not treated as “nothing nearby”.`;
   }
+  state.extrasBusy = false;
+  paint();
+}
+
+async function refreshColorCams(): Promise<void> {
+  if (!state.bundle) return;
+  const cams = foliageWebcams(state.bundle);
+  if (!cams.length) return;
+  state.colorBusy = true;
+  paint();
+  const out: LiveResult[] = [];
+  for (const cam of cams) {
+    out.push(await fetchLive({ url: cam.url, label: cam.name, kind: "webcam" }));
+  }
+  state.colorCams = out;
+  state.colorBusy = false;
   paint();
 }
 

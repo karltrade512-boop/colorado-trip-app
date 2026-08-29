@@ -36,6 +36,8 @@ import {
   bundleImage,
   judgeFallPhoto,
   matchingFallWebcam,
+  NO_FALL_PHOTO_LABEL,
+  placePhotoDecision,
 } from "./bundle.ts";
 import { osmExtraExcluded } from "./live.ts";
 
@@ -347,6 +349,8 @@ describe("trip-bundle", () => {
     assert.equal(judgeFallPhoto({ description: "snow and ski tour" }).ok, false);
     assert.equal(judgeFallPhoto({ dateText: "2019-07-04" }).ok, false);
     assert.equal(judgeFallPhoto({}).ok, false);
+    assert.equal(judgeFallPhoto({ title: "Fall River Entrance" }).ok, false);
+    assert.equal(judgeFallPhoto({ title: "Gold Hill overlook" }).ok, false);
     const cams = [
       { name: "Alpine Visitor Center", url: "https://example.com/avc.jpg" },
       { name: "Glacier Basin", url: "https://example.com/gb.jpg" },
@@ -355,6 +359,28 @@ describe("trip-bundle", () => {
     assert.equal(matchingFallWebcam({ name: "Bluebird Lake", area: "RMNP / Wild Basin" }, cams), undefined);
     assert.equal(matchingFallWebcam({ name: "Chasm Lake", trailhead: "Longs Peak Ranger Station" }, cams)?.name, "Longs Peak");
     assert.equal(matchingFallWebcam({ name: "The Loch", extra: "The Loch via Glacier Gorge Trail" }, cams)?.name, "Glacier Basin");
+  });
+
+  it("renders a hike without a qualifying photo and never uses a bare Wikipedia thumb", () => {
+    const hike = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Bluebird Lake");
+    assert.ok(hike);
+    assert.equal(bundleImage(hike.raw), undefined);
+    assert.equal(placePhotoDecision(hike.raw, hike.id).kind, "lookup");
+    assert.equal(NO_FALL_PHOTO_LABEL, "No fall photo in this bundle");
+    const about = placeCardSections(hike, bundle).about;
+    assert.ok(about.length > 0);
+    const wikiOnly = {
+      image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Bluebird.jpg/800px-Bluebird.jpg",
+      alltrails: { name: "Bluebird Lake" },
+    };
+    assert.equal(placePhotoDecision(wikiOnly, "hike-bluebird").kind, "lookup");
+    assert.equal(
+      judgeFallPhoto({ title: "thumbnail", description: wikiOnly.image }).ok,
+      false,
+    );
+    const food = collectionItems(bundle, "food", "food").find((p) => p.name === "The Country Market of Estes Park");
+    assert.ok(food);
+    assert.equal(placePhotoDecision(food.raw, food.id).kind, "none");
   });
 
   it("prints Lost Lake why from wildlife or review_summary", () => {

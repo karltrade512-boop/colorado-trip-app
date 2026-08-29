@@ -351,11 +351,25 @@ export function parsePhotoMonthYear(text: string | undefined): { month: number; 
   return undefined;
 }
 
+export const NO_FALL_PHOTO_LABEL = "No fall photo in this bundle";
+
+/** Season tags only. "Fall River" is a place name, not autumn. Bare "gold" is not enough. */
+export function fallPhotoTextSignals(text: string): { fallTagged: boolean; aspenGold: boolean; winterish: boolean } {
+  const fallTagged =
+    /\b(autumn|foliage|aspen)\b/i.test(text) ||
+    /\bfall\b(?!\s+river)/i.test(text) ||
+    /\bgold(?:en)?\s+(aspen|leaves|larch|colou?rs?|foliage)\b/i.test(text) ||
+    /\b(aspen|leaves|larch|colou?rs?|foliage)\s+gold(?:en)?\b/i.test(text);
+  const aspenGold =
+    (/\baspen\b/i.test(text) && /\b(gold|golden|autumn|foliage)\b/i.test(text)) ||
+    (/\baspen\b/i.test(text) && /\bfall\b(?!\s+river)/i.test(text));
+  const winterish = /\b(snow|ski(?:ing)?|ice|winter|blizzard|frozen)\b/i.test(text);
+  return { fallTagged, aspenGold, winterish };
+}
+
 export function judgeFallPhoto(input: FallPhotoInput): FallPhotoVerdict {
   const text = [input.title, input.description, input.categories].filter(Boolean).join(" ");
-  const fallTagged = /\b(fall|autumn|aspen|foliage|gold(?:en)?(?:\s+(?:aspen|leaves|larch|color|colour))?)\b/i.test(text);
-  const aspenGold = /\baspen\b/i.test(text) && /\b(gold|golden|autumn|fall|foliage)\b/i.test(text);
-  const winterish = /\b(snow|ski(?:ing)?|ice|winter|blizzard|frozen)\b/i.test(text);
+  const { fallTagged, aspenGold, winterish } = fallPhotoTextSignals(text);
   const dt = parsePhotoMonthYear(input.dateText) ?? parsePhotoMonthYear(text);
   if (dt) {
     const stamp = `${MONTH_SHORT[dt.month]}${dt.year ? ` ${dt.year}` : ""}`;
@@ -454,6 +468,28 @@ export function wikiTitleCandidates(name: string, area?: string): string[] {
   if (/hessie/i.test(name)) push("Lost Lake (Colorado)");
   if (/the loch/i.test(name)) push("The Loch (Rocky Mountain National Park)");
   return titles;
+}
+
+export type PlacePhotoDecision =
+  | { kind: "bundle"; url: string; label: string; why: string }
+  | { kind: "lookup" }
+  | { kind: "none" };
+
+/** Bundle URL is shown only if judgeFallPhoto passes. No Wikipedia thumb by itself. */
+export function placePhotoDecision(raw: Record<string, unknown>, id: string): PlacePhotoDecision {
+  const bundled = bundleImage(raw);
+  if (bundled) {
+    const rec = isRecord(raw.image) ? raw.image : isRecord(raw.photo) ? raw.photo : undefined;
+    const verdict = judgeFallPhoto({
+      title: bundled.label,
+      description: [bundled.url, str(rec?.description)].filter(Boolean).join(" "),
+      dateText: rec ? str(rec.datetime_original ?? rec.date ?? rec.taken) : undefined,
+      categories: str(rec?.categories),
+    });
+    if (verdict.ok) return { kind: "bundle", url: bundled.url, label: bundled.label, why: verdict.why };
+  }
+  if (str(raw.trailhead) || isRecord(raw.alltrails) || id.startsWith("photo-")) return { kind: "lookup" };
+  return { kind: "none" };
 }
 
 export function placeAbout(item: NamedItem): string[] {

@@ -25,10 +25,10 @@ import {
   foodAreaServes,
   foodDirectories,
   peekMilesLines,
-  bundleImage,
-  judgeFallPhoto,
+  NO_FALL_PHOTO_LABEL,
   placeAbout,
   placeCardSections,
+  placePhotoDecision,
   gatewayFallback,
   gfDf,
   isRecord,
@@ -414,24 +414,21 @@ function cardFolds(item: ReturnType<typeof namedItems>[number], bundle: TripBund
   return `${foldSection("About", about, true)}${foldSection("Why / why not", s.why)}${foldSection("Look out for", s.lookOut)}${foldSection("Around this", s.around)}${foldSection("Details", s.details)}`;
 }
 
-function photoPeek(item: ReturnType<typeof namedItems>[number]): string {
-  const bundled = bundleImage(item.raw);
-  if (bundled) {
-    const verdict = judgeFallPhoto({ title: bundled.label, description: bundled.url });
-    if (verdict.ok) {
-      return `<figure class="place-photo">
-        <img src="${esc(bundled.url)}" alt="${esc(item.name)}" />
-        <figcaption>${esc(bundled.label)} · ${esc(verdict.why)}</figcaption>
+function photoPeek(item: ReturnType<typeof namedItems>[number], isFood = false): string {
+  const slot = placePhotoDecision(item.raw, item.id);
+  if (slot.kind === "bundle") {
+    return `<figure class="place-photo">
+        <img src="${esc(slot.url)}" alt="${esc(item.name)}" />
+        <figcaption>${esc(slot.label)} · ${esc(slot.why)}</figcaption>
       </figure>`;
-    }
   }
-  const tryLookup = Boolean(str(item.raw.trailhead) || isRecord(item.raw.alltrails) || item.id.startsWith("photo-"));
-  if (!tryLookup) {
-    return `<figure class="place-photo none"><p class="whisper">No fall photo in this bundle</p></figure>`;
+  if (slot.kind === "none") {
+    const quiet = isFood ? " quiet" : "";
+    return `<figure class="place-photo none${quiet}"><p class="photo-empty">${esc(NO_FALL_PHOTO_LABEL)}</p></figure>`;
   }
   const extra = isRecord(item.raw.alltrails) ? str(item.raw.alltrails.name) ?? "" : "";
   return `<figure class="place-photo waiting" data-photo-name="${esc(item.name)}" data-photo-area="${esc(areaOf(item.raw) ?? "")}" data-photo-trail="${esc(str(item.raw.trailhead) ?? "")}" data-photo-extra="${esc(extra)}">
-    <p class="whisper">No fall photo in this bundle</p>
+    <p class="photo-empty">${esc(NO_FALL_PHOTO_LABEL)}</p>
   </figure>`;
 }
 
@@ -451,7 +448,7 @@ function itemCard(item: ReturnType<typeof namedItems>[number], extraClass = ""):
       })();
 
   return `<article class="card sheet ${bannedFold ? "folded-dogs" : ""}" data-id="${esc(item.id)}">
-    ${photoPeek(item)}
+    ${photoPeek(item, isFood)}
     <h3>${esc(item.name)}</h3>
     ${constraintPills(item, isFood)}
     ${peekFact}

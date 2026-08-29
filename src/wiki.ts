@@ -1,15 +1,16 @@
 import {
-  bundleImage,
   commonsSearchQueries,
   isRecord,
   judgeFallPhoto,
   matchingFallWebcam,
+  NO_FALL_PHOTO_LABEL,
+  placePhotoDecision,
   str,
   type FallPhotoInput,
   type WebcamHint,
 } from "./bundle";
 
-const PHOTO_CACHE = "colorado-place-photos-v2";
+const PHOTO_CACHE = "colorado-place-photos-v3";
 const memory = new Map<string, PlacePhoto>();
 
 export type PlacePhoto =
@@ -38,7 +39,7 @@ function fallInputFromCommons(page: QueryPage): { url?: string; input: FallPhoto
   return {
     url: str(info?.thumburl) ?? str(info?.url),
     input: {
-      dateText: metaVal(info, "DateTimeOriginal") ?? metaVal(info, "DateTime") ?? metaVal(info, "DateTimeMetadata"),
+      dateText: metaVal(info, "DateTimeOriginal"),
       title: page.title ?? metaVal(info, "ObjectName"),
       description: metaVal(info, "ImageDescription"),
       categories: [cats, metaVal(info, "Categories")].filter(Boolean).join("; "),
@@ -146,16 +147,9 @@ export async function lookupPlacePhoto(
   raw: Record<string, unknown>,
   webcams: WebcamHint[] = [],
 ): Promise<PlacePhoto> {
-  const bundled = bundleImage(raw);
-  if (bundled) {
-    const verdict = judgeFallPhoto({
-      title: bundled.label,
-      description: bundled.url,
-      dateText: str(isRecord(raw.image) ? raw.image.date ?? raw.image.taken : undefined),
-    });
-    if (verdict.ok) {
-      return { kind: "bundle", imageUrl: bundled.url, credit: `${bundled.label} · ${verdict.why}` };
-    }
+  const slot = placePhotoDecision(raw, name);
+  if (slot.kind === "bundle") {
+    return { kind: "bundle", imageUrl: slot.url, credit: `${slot.label} · ${slot.why}` };
   }
   const cached = await cachedPhoto(name);
   if (cached) return cached;
@@ -209,8 +203,8 @@ export async function hydratePlacePhotos(
     if (photo.kind === "none") {
       slot.classList.add("none");
       const p = document.createElement("p");
-      p.className = "whisper";
-      p.textContent = "No fall photo in this bundle";
+      p.className = "photo-empty";
+      p.textContent = NO_FALL_PHOTO_LABEL;
       slot.replaceChildren(p);
       continue;
     }

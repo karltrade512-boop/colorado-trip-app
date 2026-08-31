@@ -40,6 +40,10 @@ import {
   placePhotoDecision,
   commonsSearchQueries,
   commonsCandidateOk,
+  parseMooseOverlay,
+  mooseCardSections,
+  mooseLookHikes,
+  mooseLookLine,
 } from "./bundle.ts";
 import { osmExtraExcluded } from "./live.ts";
 
@@ -464,5 +468,56 @@ describe("trip-bundle", () => {
     const sec = placeCardSections(place, bundle);
     const blob = [...sec.lookOut, ...sec.details].join("\n");
     assert.match(blob, /900 Moraine Ave/);
+  });
+
+  it("builds a Moose Photos card from overlay + engine hikes, not a guarantee", () => {
+    assert.equal(tripSubjects(bundle).includes("moose"), false);
+    const lost = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Lost Lake (Hessie)");
+    assert.ok(lost);
+    assert.match(String(lost.raw.wildlife), /Moose/);
+    const overlay = parseMooseOverlay(
+      JSON.parse(readFileSync(new URL("../public/extras-moose.json", import.meta.url), "utf8")),
+    );
+    assert.equal(overlay.not_engine, true);
+    assert.equal(overlay.kind, "overlay");
+    const names = mooseLookHikes(bundle).map((h) => h.name);
+    assert.ok(names.includes("Lake Isabelle"));
+    assert.ok(names.includes("Blue Lake"));
+    assert.ok(names.includes("Long Lake"));
+    assert.ok(names.includes("Mitchell Lake"));
+    assert.ok(names.includes("Lost Lake (Hessie)"));
+    const isabelle = mooseLookHikes(bundle).find((h) => h.name === "Lake Isabelle");
+    assert.ok(isabelle);
+    assert.match(mooseLookLine(isabelle), /look here, already in this trip file/);
+    assert.match(mooseLookLine(isabelle), /behind the Brainard gate/);
+    const hessie = mooseLookHikes(bundle).find((h) => h.name === "Lost Lake (Hessie)");
+    assert.ok(hessie);
+    assert.match(mooseLookLine(hessie), /not behind the Brainard gate/);
+    const card = mooseCardSections(bundle, overlay);
+    const why = card.why.join("\n");
+    const look = card.lookOut.join("\n");
+    const around = card.around.join("\n");
+    const about = card.about.join("\n");
+    assert.match(why, /Sep–Oct is moose rut on the Front Range/);
+    assert.match(why, /Instagram @nextstop\.natalie/);
+    assert.match(why, /nearly guaranteed every day/);
+    assert.match(why, /her claim, not this app/);
+    assert.match(why, /Moose and brook trout are both commonly seen/);
+    assert.match(why, /moose is not in trip\.subjects/);
+    assert.ok(
+      card.why.filter((l) => /guaranteed/i.test(l)).every((l) => /her claim|Instagram/i.test(l)),
+      "guaranteed must stay an attributed Instagram claim",
+    );
+    assert.match(look, /UNCONFIRMED/);
+    assert.match(look, /Oct 2-5/);
+    assert.match(look, /2026-10-02–2026-10-05/);
+    assert.match(look, /willows, territorial, give space/);
+    assert.match(look, /does not give a yardage/);
+    assert.match(around, /Lake Isabelle/);
+    assert.match(around, /Blue Lake/);
+    assert.match(around, /West-side RMNP \/ other Front Range moose spots are not in this bundle/);
+    assert.equal(/Mud Lake|Kawuneeche|Gould|Peak to Peak/i.test([why, look, around, about].join("\n")), false);
+    assert.match(about, /not in trip\.subjects/);
+    assert.match(about, /instagram\.com\/reel\/DcmKiz2AJCU/);
   });
 });

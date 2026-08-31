@@ -1170,6 +1170,141 @@ export function tripSubjects(bundle: TripBundle): string[] {
   return (bundle.trip?.subjects ?? []).map(String);
 }
 
+/** Hikes already in the engine file that the Instagram reel named, plus Lost Lake wildlife. */
+export const MOOSE_LOOK_HIKE_NAMES = [
+  "Lake Isabelle",
+  "Blue Lake",
+  "Long Lake",
+  "Mitchell Lake",
+  "Lost Lake (Hessie)",
+] as const;
+
+export type MooseOverlay = {
+  kind: "overlay";
+  not_engine: true;
+  label: string;
+  instagram: {
+    url: string;
+    account: string;
+    fetched: string;
+    location_sticker: string;
+    caption: string;
+    rut_line: string;
+    guaranteed_quote: string;
+  };
+};
+
+export function parseMooseOverlay(json: unknown): MooseOverlay {
+  if (!isRecord(json)) throw new Error("Moose overlay is not an object");
+  if (json.kind !== "overlay" || json.not_engine !== true) {
+    throw new Error("Moose file is not labeled as an overlay");
+  }
+  const ig = isRecord(json.instagram) ? json.instagram : undefined;
+  if (!ig) throw new Error("Moose overlay missing instagram");
+  const url = str(ig.url);
+  const account = str(ig.account);
+  const fetched = str(ig.fetched);
+  const location = str(ig.location_sticker);
+  const caption = str(ig.caption);
+  const rut = str(ig.rut_line);
+  const guaranteed = str(ig.guaranteed_quote);
+  const label = str(json.label);
+  if (!url || !account || !fetched || !location || !caption || !rut || !guaranteed || !label) {
+    throw new Error("Moose overlay is missing required Instagram fields");
+  }
+  return {
+    kind: "overlay",
+    not_engine: true,
+    label,
+    instagram: {
+      url,
+      account,
+      fetched,
+      location_sticker: location,
+      caption,
+      rut_line: rut,
+      guaranteed_quote: guaranteed,
+    },
+  };
+}
+
+export function mooseLookHikes(bundle: TripBundle): NamedItem[] {
+  const hikes = collectionItems(bundle, "hikes", "hike");
+  const out: NamedItem[] = [];
+  for (const want of MOOSE_LOOK_HIKE_NAMES) {
+    const hit = hikes.find((h) => h.name === want);
+    if (hit) out.push(hit);
+  }
+  return out;
+}
+
+export function nederlandBaseDates(bundle: TripBundle): string[] {
+  return daysList(bundle)
+    .filter((d) => d.base === "nederland")
+    .map((d) => d.date);
+}
+
+export function mooseLookLine(hike: NamedItem): string {
+  const gate =
+    hike.raw.behind_brainard_gate === true
+      ? "behind the Brainard gate"
+      : hike.raw.behind_brainard_gate === false
+        ? "not behind the Brainard gate"
+        : "Brainard gate unknown";
+  return `${hike.name} · look here, already in this trip file · ${dogPrint(hike.raw)} · ${permitPrint(hike.raw)} · ${gate}`;
+}
+
+export function mooseCardSections(bundle: TripBundle, overlay: MooseOverlay): PlaceCardSections {
+  const ig = overlay.instagram;
+  const igTag = `Instagram @${ig.account} (fetched ${ig.fetched})`;
+  const lost = collectionItems(bundle, "hikes", "hike").find((h) => h.name === "Lost Lake (Hessie)");
+  const wildlife = lost ? str(lost.raw.wildlife) : undefined;
+  const brainard = landAccessAreas(bundle).find((a) => /brainard/i.test(`${str(a.match) ?? ""} ${str(a.name) ?? ""}`));
+  const timed = isRecord(brainard?.timed_entry) ? brainard.timed_entry : undefined;
+  const tripDates = timed ? str(timed.trip_dates_status) : undefined;
+  const ticketSeason = timed ? str(timed.ticket_season_2026) : undefined;
+  const ned = nederlandBaseDates(bundle);
+
+  const about: string[] = [];
+  pushLine(about, "moose is not in trip.subjects.");
+  pushLine(about, overlay.label);
+  pushLine(about, `${igTag}: ${ig.url}`);
+  pushLine(about, `location sticker ${ig.location_sticker}`);
+  pushLine(about, ig.caption);
+
+  const why: string[] = [];
+  pushLine(why, `${igTag}: “${ig.rut_line}.” Not official.`);
+  pushLine(why, `${igTag}: she wrote “${ig.guaranteed_quote}.” That is her claim, not this app.`);
+  pushLine(why, wildlife ? `Lost Lake (Hessie) AllTrails curated text: ${wildlife}` : undefined);
+  pushLine(why, "moose is not in trip.subjects.");
+
+  const lookOut: string[] = [];
+  if (ticketSeason) pushLine(lookOut, `Brainard timed-entry ticket season ${ticketSeason}.`);
+  pushLine(lookOut, tripDates);
+  if (ned.length) {
+    pushLine(lookOut, `Karl is based at Nederland ${ned[0]}–${ned[ned.length - 1]} (days[].base in this bundle).`);
+  }
+  pushLine(lookOut, `${igTag}: moose blend into willows, territorial, give space. That reel does not give a yardage.`);
+  pushLine(lookOut, "No moose distance is in this bundle.");
+
+  const around: string[] = mooseLookHikes(bundle).map(mooseLookLine);
+  pushLine(around, "West-side RMNP / other Front Range moose spots are not in this bundle.");
+
+  const details: string[] = [];
+  pushLine(details, overlay.label);
+  pushLine(details, `Source ${ig.url}`);
+  pushLine(details, `fetched-at ${ig.fetched}`);
+  pushLine(details, `location sticker ${ig.location_sticker}`);
+
+  return {
+    about: about.length ? about : ["moose is not in trip.subjects."],
+    why: why.length ? why : ["No why-go text in this bundle."],
+    lookOut: lookOut.length ? lookOut : ["Look out for: not in this bundle."],
+    around: around.length ? around : ["Around this: not in this bundle."],
+    details: details.length ? details : ["Details: not in this bundle."],
+  };
+}
+
 export function validateBundle(json: unknown): TripBundle {
   if (!isRecord(json)) throw new Error("Bundle is not an object");
   if (json.schema_version !== "1.0.0") {

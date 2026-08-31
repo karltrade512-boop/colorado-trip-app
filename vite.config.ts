@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-180.png", "trip-bundle.json"],
+      includeAssets: ["icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-180.png", "trip-bundle.json", "extras-moose.json"],
       manifest: false,
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,json,woff2}"],

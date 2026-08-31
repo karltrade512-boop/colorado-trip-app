@@ -40,6 +40,7 @@ import {
   landPermits,
   lengthNumber,
   missingInventory,
+  mooseCardSections,
   namedItems,
   nextOrToday,
   oneLineLight,
@@ -61,6 +62,7 @@ import { idbGet, idbSet, type CachedBundle } from "./db";
 import { haversineKm, isStandalone, mapsSearchUrl, mapsUrl } from "./geo";
 import { bundleLiveTargets, fetchLive, fetchUnverifiedExtras } from "./live";
 import { hydratePlacePhotos } from "./wiki";
+import { mooseOverlay } from "./moose-overlay";
 
 export type RouteId =
   | "today"
@@ -1449,9 +1451,22 @@ function renderPhotos(bundle: TripBundle): string {
   return `<section>
     <h1>Photos</h1>
     ${subjectCards || `<p class="gap">trip.subjects missing.</p>`}
+    ${renderMooseCard(bundle)}
     <h2>Hikes as picture spots</h2>
     ${hikeNames}
   </section>`;
+}
+
+function renderMooseCard(bundle: TripBundle): string {
+  const s = mooseCardSections(bundle, mooseOverlay);
+  const ig = mooseOverlay.instagram;
+  return `<article class="card" data-id="overlay-moose">
+    <figure class="place-photo none quiet"><p class="photo-empty">${esc(NO_FALL_PHOTO_LABEL)}</p></figure>
+    <h2 class="inline-h">Moose</h2>
+    <p class="lede">not in trip.subjects · overlay, not official</p>
+    <p class="whisper"><a href="${esc(ig.url)}" target="_blank" rel="noopener">Instagram @${esc(ig.account)}</a> · fetched ${esc(ig.fetched)}</p>
+    ${foldSection("About", s.about, true)}${foldSection("Why / why not", s.why)}${foldSection("Look out for", s.lookOut)}${foldSection("Around this", s.around)}${foldSection("Details", s.details)}
+  </article>`;
 }
 
 function renderPrint(bundle: TripBundle, date: string): string {
